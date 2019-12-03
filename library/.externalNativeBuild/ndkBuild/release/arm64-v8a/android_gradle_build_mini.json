@@ -1,0 +1,23 @@
+{
+  "buildFiles": [
+    "D:\\android_project\\yasea\\library\\src\\main\\cpp\\Android.mk",
+    "D:\\android_project\\yasea\\library\\src\\main\\cpp\\Application.mk"
+  ],
+  "cleanCommands": [
+    "D:\\sdk\\ndk-bundle\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\android_project\\yasea\\library\\src\\main\\cpp\\Android.mk NDK_APPLICATION_MK\u003dD:\\android_project\\yasea\\library\\src\\main\\cpp\\Application.mk APP_ABI\u003darm64-v8a NDK_ALL_ABIS\u003darm64-v8a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dD:/android_project/yasea/library/build/intermediates/ndkBuild/release/obj NDK_LIBS_OUT\u003dD:\\android_project\\yasea\\library\\build\\intermediates\\ndkBuild\\release\\lib clean"
+  ],
+  "libraries": {
+    "enc-release-arm64-v8a": {
+      "artifactName": "enc",
+      "buildCommand": "D:\\sdk\\ndk-bundle\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\android_project\\yasea\\library\\src\\main\\cpp\\Android.mk NDK_APPLICATION_MK\u003dD:\\android_project\\yasea\\library\\src\\main\\cpp\\Application.mk APP_ABI\u003darm64-v8a NDK_ALL_ABIS\u003darm64-v8a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dD:/android_project/yasea/library/build/intermediates/ndkBuild/release/obj NDK_LIBS_OUT\u003dD:\\android_project\\yasea\\library\\build\\intermediates\\ndkBuild\\release\\lib D:/android_project/yasea/library/build/intermediates/ndkBuild/release/obj/local/arm64-v8a/libenc.so",
+      "abi": "arm64-v8a",
+      "output": "D:\\android_project\\yasea\\library\\build\\intermediates\\ndkBuild\\release\\obj\\local\\arm64-v8a\\libenc.so"
+    },
+    "yuv-release-arm64-v8a": {
+      "artifactName": "yuv",
+      "buildCommand": "D:\\sdk\\ndk-bundle\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dD:\\android_project\\yasea\\library\\src\\main\\cpp\\Android.mk NDK_APPLICATION_MK\u003dD:\\android_project\\yasea\\library\\src\\main\\cpp\\Application.mk APP_ABI\u003darm64-v8a NDK_ALL_ABIS\u003darm64-v8a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dD:/android_project/yasea/library/build/intermediates/ndkBuild/release/obj NDK_LIBS_OUT\u003dD:\\android_project\\yasea\\library\\build\\intermediates\\ndkBuild\\release\\lib D:/android_project/yasea/library/build/intermediates/ndkBuild/release/obj/local/arm64-v8a/libyuv.so",
+      "abi": "arm64-v8a",
+      "output": "D:\\android_project\\yasea\\library\\build\\intermediates\\ndkBuild\\release\\obj\\local\\arm64-v8a\\libyuv.so"
+    }
+  }
+}

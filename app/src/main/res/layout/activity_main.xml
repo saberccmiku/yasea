@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:fab="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    tools:context="net.ossrs.yasea.demo.MainActivity">
+
+
+    <RelativeLayout
+        android:layout_above="@+id/diver"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <FrameLayout
+            android:id="@+id/fl"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <net.ossrs.yasea.SrsCameraView
+                android:id="@+id/glsurfaceview_camera"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <net.ossrs.yasea.demo.widget.FaceRectView
+                android:id="@+id/face_rect_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:orientation="horizontal"
+            android:weightSum="5">
+
+            <Button
+                android:id="@+id/pause"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="暂停" />
+
+            <Button
+                android:id="@+id/publish"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="发布" />
+
+            <Button
+                android:id="@+id/swCam"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="切换" />
+
+            <Button
+                android:id="@+id/record"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="录制" />
+
+            <Button
+                android:id="@+id/swEnc"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="编码" />
+
+        </LinearLayout>
+
+
+        <EditText
+            android:id="@+id/url"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/accent_material_light"
+            android:textSize="14dp" />
+
+
+    </RelativeLayout>
+
+    <!-- 分割线 -->
+    <LinearLayout
+        android:id="@+id/diver"
+        android:layout_above="@+id/bottomGroup"
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:background="#2E2A2A"
+        android:orientation="horizontal" />
+
+
+    <LinearLayout
+        android:id="@+id/bottomGroup"
+        android:layout_alignParentBottom="true"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- android:background="@drawable/bk_footer" -->
+
+        <Button
+            android:id="@+id/search"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:text="搜索"
+            tools:ignore="ButtonStyle" />
+
+        <Button
+            android:id="@+id/main"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:button="@null"
+            android:checked="true"
+            android:text="首 页"
+            tools:ignore="ButtonStyle" />
+
+        <Button
+            android:id="@+id/center"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:text="个人中心"
+            tools:ignore="ButtonStyle" />
+    </LinearLayout>
+
+    <com.custom.view.floatingactionbutton.FloatingActionsMenu
+        android:id="@+id/multiple_actions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        fab:fab_addButtonColorNormal="@color/white"
+        fab:fab_addButtonColorPressed="@color/white_pressed"
+        fab:fab_addButtonPlusIconColor="@color/half_black"
+        fab:fab_labelStyle="@style/menu_labels_style"
+        android:layout_marginBottom="100dp"
+        android:layout_marginEnd="10dp"
+        tools:ignore="RelativeOverlap">
+
+        <com.custom.view.floatingactionbutton.FloatingActionButton
+            android:id="@+id/action_a"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            fab:fab_colorNormal="@color/white"
+            fab:fab_title="Action A"
+            fab:fab_colorPressed="@color/white_pressed"/>
+
+        <com.custom.view.floatingactionbutton.FloatingActionButton
+            android:id="@+id/action_b"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            fab:fab_colorNormal="@color/white"
+            fab:fab_title="Action with a very long name that won\'t fit on the screen"
+            fab:fab_colorPressed="@color/white_pressed"/>
+
+    </com.custom.view.floatingactionbutton.FloatingActionsMenu>
+
+    <!--<android.support.v7.widget.RecyclerView-->
+    <!--android:id="@+id/recyclerView"-->
+    <!--android:layout_width="0dp"-->
+    <!--android:layout_height="match_parent"-->
+    <!--android:layout_weight="1">-->
+
+    <!--</android.support.v7.widget.RecyclerView>-->
+</RelativeLayout>
