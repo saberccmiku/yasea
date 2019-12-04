@@ -387,17 +387,6 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     }
 
     protected Camera openCamera() {
-
-        // check Android 6 permission
-        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED) {
-            Log.i("摄像机","Granted");
-            //init(barcodeScannerView, getIntent(), null);
-        } else {
-            ActivityCompat.requestPermissions((Activity)getContext(),
-                    new String[]{Manifest.permission.CAMERA}, 1);//1 can be another integer
-        }
-
         Camera camera = null;
         if (mCamId < 0) {
             Camera.CameraInfo info = new Camera.CameraInfo();
@@ -421,7 +410,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
                 mCamId = 0;
             }
         }
-        
+
         try {
             camera = Camera.open(mCamId);
             camera.setErrorCallback(new Camera.ErrorCallback(){
@@ -430,8 +419,8 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
                     //may be Camera.CAMERA_ERROR_EVICTED - Camera was disconnected due to use by higher priority user
                     stopCamera();
                 }
-            });            
-            
+            });
+
         }catch (Exception e){
             e.printStackTrace();
         }

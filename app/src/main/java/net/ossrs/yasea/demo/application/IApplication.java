@@ -18,15 +18,14 @@ public class IApplication extends Application {
 
     @Override
     public void onCreate() {
-
+        super.onCreate();
         {
             try {
                 Log.i(TAG, "socket开始连接.............");
-                mSocket = IO.socket(Constants.CHAT_SERVER_URL);
+                mSocket = IO.socket(Constants.SOCKET_SERVER_URL);
                 mSocket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
                     @Override
                     public void call(Object... args) {
-                        mSocket.emit("text","1123");
                         Log.i(TAG, "socket连接成功");
                     }
                 }).on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {
@@ -50,11 +49,13 @@ public class IApplication extends Application {
                         Log.i(TAG, "socket连接异常");
                     }
                 });
+
+                mSocket.connect();
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
         }
-        super.onCreate();
+
     }
 
     public Socket getSocket() {

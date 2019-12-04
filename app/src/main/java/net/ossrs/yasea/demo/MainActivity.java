@@ -82,7 +82,6 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-@SuppressLint("Registered")
 public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpListener,
         SrsRecordHandler.SrsRecordListener, SrsEncodeHandler.SrsEncodeListener, View.OnClickListener {
 
@@ -97,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     private EditText efu;
 
     private SharedPreferences sp;
-    private String rtmpUrl = "rtmp://192.168.0.40/hls/test";
+    private String rtmpUrl = "rtmp://192.168.150.1/hls/test";
     private String recPath = Environment.getExternalStorageDirectory().getPath() + "/test.mp4";
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
@@ -874,7 +873,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
 
     private JSONObject synRequest(RequestBody requestBody) {
         Request request = new Request.Builder()
-                .url("http://192.168.0.61:8080/faceSearch1")
+                .url("http://192.168.150.1:9089/faceSearch1")
                 .post(requestBody)
                 .build();
         Call call = mHttpClient.newCall(request);
@@ -893,7 +892,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
 
     private void asyRequest(RequestBody requestBody) {
         final Request request = new Request.Builder()
-                .url("http://192.168.0.40:8080/faceSearch1")
+                .url("http://192.168.150.1:9089/faceSearch1")
                 .post(requestBody)
                 .build();
         Call call = mHttpClient.newCall(request);
