@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     xmlns:fab="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    tools:context="net.ossrs.yasea.demo.MainActivity">
+    tools:context="net.ossrs.yasea.demo.view.MainActivity">
 
 
     <RelativeLayout

@@ -55,7 +55,7 @@ public class ClientThread  implements Runnable {
         public void handleMessage(Message msg){
             if(msg.what==0x111){
                 try {
-                    socket = new Socket("192.168.0.40",8080);
+                    socket = new Socket("192.168.1.25",8080);
                     os = socket.getOutputStream();
                     YuvImage image = (YuvImage) msg.obj;
                     if(socket.isOutputShutdown()){

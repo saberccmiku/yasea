@@ -1,4 +1,4 @@
-package net.ossrs.yasea.demo;
+package net.ossrs.yasea.demo.view;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -14,8 +14,9 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 
+import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.application.IApplication;
-import net.ossrs.yasea.demo.model.UserInfo;
+import net.ossrs.yasea.demo.bean.UserInfo;
 import net.ossrs.yasea.demo.util.permission.PermissionListener;
 import net.ossrs.yasea.demo.util.permission.PermissionsUtil;
 

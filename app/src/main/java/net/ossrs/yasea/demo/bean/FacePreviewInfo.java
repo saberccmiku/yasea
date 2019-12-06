@@ -1,4 +1,4 @@
-package net.ossrs.yasea.demo.model;
+package net.ossrs.yasea.demo.bean;
 
 import com.arcsoft.face.FaceInfo;
 import com.arcsoft.face.LivenessInfo;

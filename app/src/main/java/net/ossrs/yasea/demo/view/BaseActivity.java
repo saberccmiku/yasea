@@ -1,4 +1,4 @@
-package net.ossrs.yasea.demo;
+package net.ossrs.yasea.demo.view;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;

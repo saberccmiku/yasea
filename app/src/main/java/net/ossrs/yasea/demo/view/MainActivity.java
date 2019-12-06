@@ -1,7 +1,6 @@
-package net.ossrs.yasea.demo;
+package net.ossrs.yasea.demo.view;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
@@ -41,10 +40,12 @@ import net.ossrs.yasea.SrsCameraView;
 import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
+import net.ossrs.yasea.demo.CompareResult;
+import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.adapter.CommonRecyclerAdapter;
-import net.ossrs.yasea.demo.model.DrawInfo;
-import net.ossrs.yasea.demo.model.FacePreviewInfo;
-import net.ossrs.yasea.demo.model.FaceRegisterInfo;
+import net.ossrs.yasea.demo.bean.DrawInfo;
+import net.ossrs.yasea.demo.bean.FacePreviewInfo;
+import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
 import net.ossrs.yasea.demo.util.DrawHelper;
 import net.ossrs.yasea.demo.util.face.FaceHelper;
 import net.ossrs.yasea.demo.util.face.FaceListener;
@@ -96,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     private EditText efu;
 
     private SharedPreferences sp;
-    private String rtmpUrl = "rtmp://192.168.150.1/hls/test";
+    private String rtmpUrl = "rtmp://192.168.1.25/hls/test";
     private String recPath = Environment.getExternalStorageDirectory().getPath() + "/test.mp4";
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
@@ -169,8 +170,6 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         //初始化播放控件
         initCamera();
 //        initRecycleView();
-        //  activeEngine();
-        // initEngine();
         activeEngine();
         initEngine();
         previewSize = mCameraView.getCamera().getParameters().getPreviewSize();
@@ -614,7 +613,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                 }
                 break;
             case R.id.search:
-                startActivity(new Intent(this,FloatActivity.class));
+                startActivity(new Intent(this, FloatActivity.class));
                 break;
             default:
                 break;
@@ -873,7 +872,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
 
     private JSONObject synRequest(RequestBody requestBody) {
         Request request = new Request.Builder()
-                .url("http://192.168.150.1:9089/faceSearch1")
+                .url("http://192.168.1.25:9089/faceSearch1")
                 .post(requestBody)
                 .build();
         Call call = mHttpClient.newCall(request);
@@ -892,7 +891,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
 
     private void asyRequest(RequestBody requestBody) {
         final Request request = new Request.Builder()
-                .url("http://192.168.150.1:9089/faceSearch1")
+                .url("http://192.168.1.25:9089/faceSearch1")
                 .post(requestBody)
                 .build();
         Call call = mHttpClient.newCall(request);

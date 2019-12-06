@@ -1,4 +1,4 @@
-package net.ossrs.yasea.demo.model;
+package net.ossrs.yasea.demo.bean;
 
 import android.graphics.Bitmap;
 

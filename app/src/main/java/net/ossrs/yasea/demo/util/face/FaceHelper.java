@@ -4,7 +4,6 @@ import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.os.Environment;
 import android.util.Log;
 
 import com.arcsoft.face.ErrorInfo;
@@ -13,13 +12,10 @@ import com.arcsoft.face.FaceFeature;
 import com.arcsoft.face.FaceInfo;
 import com.arcsoft.face.LivenessInfo;
 
-import net.ossrs.yasea.demo.model.FacePreviewInfo;
+import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.util.TrackUtil;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

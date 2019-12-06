@@ -11,7 +11,7 @@ import com.arcsoft.face.AgeInfo;
 import com.arcsoft.face.GenderInfo;
 import com.arcsoft.face.LivenessInfo;
 
-import net.ossrs.yasea.demo.model.DrawInfo;
+import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.widget.FaceRectView;
 
 import java.util.List;

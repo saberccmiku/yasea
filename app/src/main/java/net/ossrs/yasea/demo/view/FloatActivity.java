@@ -1,4 +1,4 @@
-package net.ossrs.yasea.demo;
+package net.ossrs.yasea.demo.view;
 
 import android.annotation.SuppressLint;
 import android.graphics.drawable.ShapeDrawable;
@@ -11,7 +11,8 @@ import android.widget.Toast;
 import com.custom.view.floatingactionbutton.FloatingActionButton;
 import com.custom.view.floatingactionbutton.FloatingActionsMenu;
 
-@SuppressLint("Registered")
+import net.ossrs.yasea.demo.R;
+
 public class FloatActivity extends AppCompatActivity {
 
     @Override

@@ -8,7 +8,7 @@ import android.util.AttributeSet;
 import android.view.View;
 
 
-import net.ossrs.yasea.demo.model.DrawInfo;
+import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.util.DrawHelper;
 
 import java.util.List;

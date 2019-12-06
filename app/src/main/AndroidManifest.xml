@@ -24,17 +24,20 @@
         android:name=".application.IApplication"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".LoginActivity"
+            android:name=".view.SplashActivity"
             android:configChanges="orientation|screenSize"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:theme="@style/NoTitleFullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity" />
+        <activity android:name=".view.MainActivity" />
         <activity android:name=".util.permission.PermissionActivity" />
+        <activity android:name=".view.FloatActivity" />
+        <activity android:name=".view.LoginActivity" />
     </application>
 
 </manifest>
