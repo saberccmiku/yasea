@@ -231,7 +231,6 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         search = findViewById(R.id.search);
 
 
-
         //绑定点击事件
         btnPublish.setOnClickListener(this);
         btnPause.setOnClickListener(this);
@@ -241,22 +240,8 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         search.setOnClickListener(this);
     }
 
-
     private CommonRecyclerAdapter mAdapter;
 
-//    public void initRecycleView() {
-//        recyclerView = findViewById(R.id.recyclerView);
-//        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-//        mAdapter = new CommonRecyclerAdapter<CompareResult>(this, R.layout.item_layout, compareResultList) {
-//
-//            @Override
-//            public void convertView(CommonRecyclerViewHolder holder, CompareResult compareResult) {
-//                holder.setText(R.id.tv_name, String.valueOf(compareResult.getUserName()));
-//                holder.setText(R.id.tv_sex, String.valueOf(compareResult.getSex()));
-//            }
-//        };
-//        recyclerView.setAdapter(mAdapter);
-//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

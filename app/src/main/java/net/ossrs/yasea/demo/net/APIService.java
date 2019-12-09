@@ -1,12 +1,10 @@
 package net.ossrs.yasea.demo.net;
 
-import net.ossrs.yasea.demo.bean.BaseObjectBean;
-import net.ossrs.yasea.demo.bean.LoginBean;
+import net.ossrs.yasea.demo.bean.RecommendInfo;
 
-import io.reactivex.Flowable;
-import retrofit2.http.Field;
-import retrofit2.http.FormUrlEncoded;
-import retrofit2.http.POST;
+import io.reactivex.Observable;
+import retrofit2.http.GET;
+
 
 /**
  * @author fjy
@@ -15,15 +13,14 @@ import retrofit2.http.POST;
 public interface APIService {
 
     /**
-     * 登陆
-     *
-     * @param username 账号
-     * @param password 密码
-     * @return
+     * 首页推荐数据
      */
-    @FormUrlEncoded
-    @POST("user/login")
-    Flowable<BaseObjectBean<LoginBean>> login(@Field("username") String username,
-                                              @Field("password") String password);
+    /**
+     * 首页推荐数据
+     /**
+     * 首页推荐数据
+     */
+    @GET("x/show/old?platform=android&device=&build=412001")
+    Observable<RecommendInfo> getRecommendedInfo();
 
 }

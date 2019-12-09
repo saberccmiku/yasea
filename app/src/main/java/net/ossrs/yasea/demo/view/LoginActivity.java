@@ -3,7 +3,6 @@ package net.ossrs.yasea.demo.view;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
@@ -16,6 +15,7 @@ import com.google.gson.Gson;
 
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.application.IApplication;
+import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.UserInfo;
 import net.ossrs.yasea.demo.util.permission.PermissionListener;
 import net.ossrs.yasea.demo.util.permission.PermissionsUtil;
@@ -41,7 +41,7 @@ public class LoginActivity extends BaseActivity {
     }
 
     @Override
-    public void initViews(Bundle savedInstanceState) {
+    public void initView() {
 
         final String[] permissions = {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -69,11 +69,6 @@ public class LoginActivity extends BaseActivity {
         IApplication app = (IApplication) getApplication();
         mSocket = app.getSocket();
         mSocket.on("join", onLogin);
-    }
-
-    @Override
-    public void initToolBar() {
-
     }
 
     @Override

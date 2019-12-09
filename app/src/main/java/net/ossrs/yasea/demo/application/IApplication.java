@@ -15,10 +15,12 @@ public class IApplication extends Application {
 
     private Socket mSocket;
     private String TAG = IApplication.class.getName();
+    private static IApplication sApp;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        sApp = this;
         {
             try {
                 Log.i(TAG, "socket开始连接.............");
@@ -61,5 +63,10 @@ public class IApplication extends Application {
     public Socket getSocket() {
         return mSocket;
     }
+
+    public static IApplication getInstance() {
+        return sApp;
+    }
+
 
 }
