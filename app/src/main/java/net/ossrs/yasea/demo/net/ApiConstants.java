@@ -1,4 +1,4 @@
-package net.ossrs.yasea.demo.util;
+package net.ossrs.yasea.demo.net;
 
 import okhttp3.MediaType;
 

@@ -1,7 +1,8 @@
 package net.ossrs.yasea.demo.net;
 
+import android.support.annotation.NonNull;
+
 import net.ossrs.yasea.demo.application.IApplication;
-import net.ossrs.yasea.demo.util.ApiConstants;
 import net.ossrs.yasea.demo.util.CommonUtil;
 
 import java.io.File;
@@ -71,8 +72,9 @@ public class RetrofitHelper {
      * 为OKHttp添加缓存，这里是考虑到服务器不支持缓存时，从而让OKHttp支持缓存
      */
     private static class CacheInterceptor implements Interceptor {
+        @NonNull
         @Override
-        public Response intercept(Chain chain) throws IOException {
+        public Response intercept(@NonNull Chain chain) throws IOException {
             // 有网络时 设置缓存超时时间1个小时
             int maxAge = 60 * 60;
             // 无网络时，设置超时为1天

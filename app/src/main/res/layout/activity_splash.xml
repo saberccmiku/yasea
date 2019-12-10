@@ -10,7 +10,7 @@
         android:id="@+id/tv_version"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="本版本由武汉天恒信息技术有限公司提供"
+        android:text="@string/tv_version"
         android:textColor="@color/white"
         android:layout_marginBottom="20dp"
         android:layout_centerHorizontal="true"
@@ -22,7 +22,7 @@
         android:layout_height="40dp"
         android:layout_above="@+id/tv_version"
         android:layout_marginBottom="100dp"
-        android:text="   正再检测..."
+        android:text="@string/tv_status"
         android:gravity="center"
         android:background="#54FFFCFC"/>
 
@@ -32,7 +32,8 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="20dp"
-        android:text="立即激活"
+        android:visibility="gone"
+        android:text="@string/active"
         android:layout_above="@+id/tv_version"/>
 
 </RelativeLayout>

@@ -9,6 +9,7 @@ import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -50,6 +51,12 @@ public class CommonRecyclerViewHolder extends RecyclerView.ViewHolder {
     public CommonRecyclerViewHolder setText(int viewId,String text){
         TextView textView = getView(viewId);
         textView.setText(text);
+        return this;
+    }
+
+    public CommonRecyclerViewHolder setEditText(int viewId,String text){
+        EditText editText = getView(viewId);
+        editText.setText(text);
         return this;
     }
 

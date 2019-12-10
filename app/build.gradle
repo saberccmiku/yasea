@@ -53,4 +53,11 @@ dependencies {
     implementation 'com.trello.rxlifecycle2:rxlifecycle-components:2.2.2'
     //jetbrains 注解
     implementation 'org.jetbrains:annotations-java5:15.0'
+    //支持浏览器查看数据库数据，如果不需要可以去掉dependencies 代码块
+    debugImplementation "io.objectbox:objectbox-android-objectbrowser:$objectboxVersion"
+    releaseImplementation "io.objectbox:objectbox-android:$objectboxVersion"
 }
+
+//一定放在dependencies代码块下
+apply plugin: 'io.objectbox' // after applying Android plugin
+

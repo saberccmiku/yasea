@@ -169,7 +169,6 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
         findView();
         //初始化播放控件
         initCamera();
-//        initRecycleView();
         activeEngine();
         initEngine();
         previewSize = mCameraView.getCamera().getParameters().getPreviewSize();
@@ -688,9 +687,6 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                         //从远程
                         break;
                     case 2:
-                        //         initRecycleView();
-                        //   recyclerView.getAdapter().
-                        //           recyclerView.getAdapter().notifyDataSetChanged();
                         break;
                     case 3:
                         break;
