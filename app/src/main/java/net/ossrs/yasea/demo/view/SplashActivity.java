@@ -38,7 +38,7 @@ public class SplashActivity extends BaseActivity {
         RetrofitHelper.getAppAPI()//基础URL
                 .getRecommendedInfo()//接口后缀URL
                 .compose(RxLifecycle.bindUntilEvent(lifecycle(), ActivityEvent.DESTROY))//设计是否备份数据
-                .delay(2, TimeUnit.SECONDS)
+                .delay(1, TimeUnit.SECONDS)
                 //.map(RecommendInfo::getResult)//得到JSON子数组
                 .subscribeOn(Schedulers.io())//设计线程读写方式
                 .observeOn(AndroidSchedulers.mainThread())//指定线程运行的位置

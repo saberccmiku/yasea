@@ -9,9 +9,9 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.FLASHLIGHT" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-
+    <!-- Required to run keep-alive service when targeting API 28 or higher -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-feature
         android:glEsVersion="0x00020000"
@@ -37,7 +37,6 @@
         <activity android:name=".view.MainActivity" />
         <activity android:name=".util.permission.PermissionActivity" />
         <activity android:name=".view.FloatActivity" />
-        <activity android:name=".view.LoginActivity" />
         <activity android:name=".view.ActiveActivity" />
     </application>
 

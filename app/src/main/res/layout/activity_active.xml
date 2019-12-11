@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#03A9F4"
@@ -11,20 +12,21 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="20dp">
+        android:padding="20dp"
+        tools:ignore="UseCompoundDrawables">
 
-        <ImageView
-            android:id="@+id/back"
+        <ImageButton
+            android:id="@+id/iv_back"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_back" />
+            android:background="@drawable/ic_back" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="设备激活"
+            android:text="@string/equipment_active"
             android:textColor="@color/white" />
 
     </LinearLayout>
@@ -36,6 +38,7 @@
         android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/ll_config"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
@@ -47,20 +50,14 @@
 
             </android.support.v7.widget.RecyclerView>
 
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="15dp"
-                android:background="@drawable/btn_circle_shape"
-                android:text="@string/active"
-                android:textColor="@color/white" />
         </LinearLayout>
 
         <RelativeLayout
-            android:id="@+id/rl_operate"
+            android:id="@+id/rl_operate_status"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:background="@color/white"
+            android:padding="20dp"
             android:visibility="gone">
 
             <ImageView
@@ -70,7 +67,7 @@
                 android:layout_centerHorizontal="true"
                 android:layout_marginTop="20dp"
                 android:background="@drawable/ic_success"
-                android:contentDescription="@string/active_success" />
+                android:contentDescription="@string/app_name" />
 
             <TextView
                 android:id="@+id/tv_status"
@@ -78,7 +75,6 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/iv_status"
                 android:layout_centerHorizontal="true"
-                android:text="@string/active_success"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -88,17 +84,20 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/tv_status"
                 android:layout_centerHorizontal="true"
-                android:text="@string/equipment_active_success"
                 android:textSize="12sp" />
 
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/tv_equipment_status"
-                android:layout_margin="15dp"
-                android:background="@drawable/btn_circle_shape"
-                android:text="@string/done"
-                android:textColor="@color/white" />
         </RelativeLayout>
+
+
+        <Button
+            android:id="@+id/btn_operate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="15dp"
+            android:background="@drawable/btn_circle_shape"
+            android:text="@string/active"
+            android:textColor="@color/white" />
+
     </LinearLayout>
+
 </LinearLayout>

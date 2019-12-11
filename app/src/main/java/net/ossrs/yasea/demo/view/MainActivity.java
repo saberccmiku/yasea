@@ -6,12 +6,10 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.hardware.Camera;
-import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.util.Base64;
 import android.util.Log;
@@ -43,9 +41,12 @@ import net.ossrs.yasea.SrsRecordHandler;
 import net.ossrs.yasea.demo.CompareResult;
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.adapter.CommonRecyclerAdapter;
+import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
+import net.ossrs.yasea.demo.net.ApiConstants;
+import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.DrawHelper;
 import net.ossrs.yasea.demo.util.face.FaceHelper;
 import net.ossrs.yasea.demo.util.face.FaceListener;
@@ -83,10 +84,10 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpListener,
+public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListener,
         SrsRecordHandler.SrsRecordListener, SrsEncodeHandler.SrsEncodeListener, View.OnClickListener {
 
-    private static final String TAG = "Yasea";
+    private static final String TAG = MainActivity.class.getName();
 
     private Button btnPublish;
     private Button btnSwitchCamera;
@@ -97,22 +98,11 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     private EditText efu;
 
     private SharedPreferences sp;
-    private String rtmpUrl = "rtmp://192.168.1.25/hls/test";
+    private String rtmpUrl = ApiConstants.rtmpUrl;
     private String recPath = Environment.getExternalStorageDirectory().getPath() + "/test.mp4";
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
     private static final float SIMILAR_THRESHOLD = 0.8F;
-
-
-    /**
-     * 所需的所有权限信息
-     */
-    private static final String[] NEEDED_PERMISSIONS = new String[]{
-            Manifest.permission.CAMERA,
-            Manifest.permission.READ_PHONE_STATE
-
-    };
-
 
     private FaceEngine faceEngine;
     private String appId = "H8QuDe8V8fg6oSQjCdwA8XBhGBJ2qiew4myUhPAhvY1d";
@@ -151,18 +141,21 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
     private ConcurrentHashMap<Integer, Integer> requestFeatureStatusMap = new ConcurrentHashMap<>();
     private Camera.Size previewSize;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
 
+    @Override
+    public int getLayoutId() {
+        return R.layout.activity_main;
+    }
+
+    @Override
+    public void initView() {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(R.layout.activity_main);
 
         // response screen rotation event
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
 
         // restore data.
-        sp = getSharedPreferences("Yasea", MODE_PRIVATE);
+        sp = getSharedPreferences(Constants.SHARED_PREFERENCES, MODE_PRIVATE);
         rtmpUrl = sp.getString("rtmpUrl", rtmpUrl);
 
         //获取布局控件对象
@@ -187,6 +180,7 @@ public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpL
                 , mPublisher.getCameraId(), false, false, false);
 
     }
+
 
     private void initCamera() {
 
