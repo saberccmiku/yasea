@@ -1,7 +1,5 @@
 package net.ossrs.yasea.demo.view;
 
-import android.Manifest;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
@@ -17,10 +15,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.arcsoft.face.AgeInfo;
@@ -30,7 +28,6 @@ import com.arcsoft.face.FaceInfo;
 import com.arcsoft.face.FaceSimilar;
 import com.arcsoft.face.GenderInfo;
 import com.arcsoft.face.LivenessInfo;
-import com.arcsoft.face.VersionInfo;
 import com.github.faucamp.simplertmp.RtmpHandler;
 import com.seu.magicfilter.utils.MagicFilterType;
 
@@ -67,6 +64,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import butterknife.BindView;
+import butterknife.OnClick;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -89,13 +88,14 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     private static final String TAG = MainActivity.class.getName();
 
+    //是否在线
+    private boolean isOnLine;
+
     private Button btnPublish;
     private Button btnSwitchCamera;
     private Button btnRecord;
     private Button btnSwitchEncoder;
     private Button btnPause;
-    private Button search;
-    private EditText efu;
 
     private SharedPreferences sp;
     private String rtmpUrl = ApiConstants.rtmpUrl;
@@ -104,9 +104,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private SrsCameraView mCameraView;
     private static final float SIMILAR_THRESHOLD = 0.8F;
 
-    private FaceEngine faceEngine;
-    private String appId = "H8QuDe8V8fg6oSQjCdwA8XBhGBJ2qiew4myUhPAhvY1d";
-    private String sdkKey = "B81vkewSmkXGXASVdfwCpX9MzquuiiTp4jK93tibGiLi";
+//    private FaceEngine faceEngine;
+//    private String appId = "H8QuDe8V8fg6oSQjCdwA8XBhGBJ2qiew4myUhPAhvY1d";
+//    private String sdkKey = "B81vkewSmkXGXASVdfwCpX9MzquuiiTp4jK93tibGiLi";
 
     private List<FaceInfo> faceInfoList;
 
@@ -141,6 +141,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private ConcurrentHashMap<Integer, Integer> requestFeatureStatusMap = new ConcurrentHashMap<>();
     private Camera.Size previewSize;
 
+    @BindView(R.id.fl_video)
+    FrameLayout flVideo;
+
 
     @Override
     public int getLayoutId() {
@@ -157,28 +160,60 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         // restore data.
         sp = getSharedPreferences(Constants.SHARED_PREFERENCES, MODE_PRIVATE);
         rtmpUrl = sp.getString("rtmpUrl", rtmpUrl);
-
         //获取布局控件对象
         findView();
+
+    }
+
+    private void setMonitor() {
         //初始化播放控件
         initCamera();
-        activeEngine();
-        initEngine();
+        //激活人脸识别
+//        activeEngine();
+        //初始化人脸识别引擎
+//        initEngine();
+        //设置录播界面控件
+        initCameraWidget();
+
+    }
+
+    @BindView(R.id.tv_online)
+    TextView tvOnline;
+
+    @OnClick(R.id.fab_online)
+    public void setOnLine() {
+        isOnLine = !isOnLine;
+        if (!isOnLine) {
+            tvOnline.setText("离线中");
+            flVideo.setVisibility(View.GONE);
+            if (mPublisher != null) {
+                mPublisher.stopPublish();
+                mPublisher.stopRecord();
+                mPublisher.stopCamera();
+            }
+        } else {
+            tvOnline.setText("工作中");
+            flVideo.setVisibility(View.VISIBLE);
+            //设置监控
+            setMonitor();
+        }
+    }
+
+    private void initCameraWidget() {
+
         previewSize = mCameraView.getCamera().getParameters().getPreviewSize();
         btnPublish.setText("发布");
         btnPublish.callOnClick();
         previewSize.width = mPublisher.getEncoder().getOutputWidth();
         previewSize.height = mPublisher.getEncoder().getOutputHeight();
-        faceHelper = new FaceHelper.Builder()
-                .faceEngine(faceEngine)
-                .frThreadNum(MAX_DETECT_NUM)
-                .previewSize(previewSize)
-                .faceListener(faceListener)
-                .build();
-        ViewGroup.LayoutParams lp = mCameraView.getLayoutParams();
+//        faceHelper = new FaceHelper.Builder()
+//                .faceEngine(faceEngine)
+//                .frThreadNum(MAX_DETECT_NUM)
+//                .previewSize(previewSize)
+//                .faceListener(faceListener)
+//                .build();
         drawHelper = new DrawHelper(this.previewSize.width, this.previewSize.height, mCameraView.getmPreviewWidth(), mCameraView.getmPreviewHeight(), 0
                 , mPublisher.getCameraId(), false, false, false);
-
     }
 
 
@@ -211,9 +246,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     }
 
     private void findView() {
+        flVideo.setVisibility(View.GONE);
         // initialize url.
-        efu = findViewById(R.id.url);
-        efu.setText(rtmpUrl);
         btnPublish = findViewById(R.id.publish);
         btnSwitchCamera = findViewById(R.id.swCam);
         btnRecord = findViewById(R.id.record);
@@ -221,7 +255,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         btnPause = findViewById(R.id.pause);
         btnPause.setEnabled(false);
         mCameraView = findViewById(R.id.glsurfaceview_camera);
-        search = findViewById(R.id.search);
 
 
         //绑定点击事件
@@ -230,7 +263,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         btnSwitchCamera.setOnClickListener(this);
         btnRecord.setOnClickListener(this);
         btnSwitchEncoder.setOnClickListener(this);
-        search.setOnClickListener(this);
     }
 
     private CommonRecyclerAdapter mAdapter;
@@ -311,7 +343,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     @Override
     protected void onStart() {
         super.onStart();
-        if (mPublisher.getCamera() == null) {
+        if (isOnLine && mPublisher.getCamera() == null) {
             //if the camera was busy and available again
             mPublisher.startCamera();
         }
@@ -320,22 +352,28 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     @Override
     protected void onResume() {
         super.onResume();
-        final Button btn = (Button) findViewById(R.id.publish);
-        btn.setEnabled(true);
-        mPublisher.resumeRecord();
+        if (isOnLine) {
+            final Button btn = (Button) findViewById(R.id.publish);
+            btn.setEnabled(true);
+            mPublisher.resumeRecord();
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mPublisher.pauseRecord();
+        if (isOnLine) {
+            mPublisher.pauseRecord();
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mPublisher.stopPublish();
-        mPublisher.stopRecord();
+        if (isOnLine) {
+            mPublisher.stopPublish();
+            mPublisher.stopRecord();
+        }
     }
 
     @Override
@@ -531,7 +569,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         switch (view.getId()) {
             case R.id.publish:
                 if (btnPublish.getText().toString().contentEquals("发布")) {
-                    rtmpUrl = efu.getText().toString();
                     SharedPreferences.Editor editor = sp.edit();
                     editor.putString("rtmpUrl", rtmpUrl);
                     editor.apply();
@@ -589,9 +626,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     mPublisher.switchToHardEncoder();
                     btnSwitchEncoder.setText("软编码");
                 }
-                break;
-            case R.id.search:
-                startActivity(new Intent(this, FloatActivity.class));
                 break;
             default:
                 break;
@@ -691,14 +725,14 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     }
 
 
-    private void searchFace(final byte[] nv21, final FaceFeature frFace, final Integer requestId) {
+    private void searchFace(FaceEngine faceEngine, final byte[] nv21, final FaceFeature frFace, final Integer requestId) {
 
         Observable
                 .create(new ObservableOnSubscribe<CompareResult>() {
                     @Override
                     public void subscribe(ObservableEmitter<CompareResult> emitter) {
 //                        Log.i(TAG, "subscribe: fr search start = " + System.currentTimeMillis() + " trackId = " + requestId);
-                        CompareResult compareResult = getTopOfFaceLib(nv21, frFace);
+                        CompareResult compareResult = getTopOfFaceLib(faceEngine, nv21, frFace);
 //                        Log.i(TAG, "subscribe: fr search end = " + System.currentTimeMillis() + " trackId = " + requestId);
                         if (compareResult == null) {
                             emitter.onError(null);
@@ -776,7 +810,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      * @param faceFeature 传入特征数据
      * @return 比对结果
      */
-    public CompareResult getTopOfFaceLib(byte[] nv21, FaceFeature faceFeature) {
+    public CompareResult getTopOfFaceLib(FaceEngine faceEngine, byte[] nv21, FaceFeature faceFeature) {
         if (faceEngine == null || isProcessing || faceFeature == null) {
             return null;
         }
@@ -897,21 +931,21 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     /**
      * 激活引擎
      */
-    private void activeEngine() {
-        faceEngine = new FaceEngine();
-        faceEngine.active(getApplicationContext(), appId, sdkKey);
-    }
+//    private void activeEngine() {
+//        faceEngine = new FaceEngine();
+//        faceEngine.active(getApplicationContext(), appId, sdkKey);
+//    }
 
     /**
      * 初始化引擎
      */
-    private void initEngine() {
-        faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, FaceEngine.ASF_OP_0_HIGHER_EXT,
-                16, MAX_DETECT_NUM, FaceEngine.ASF_FACE_RECOGNITION | FaceEngine.ASF_FACE_DETECT | FaceEngine.ASF_AGE | FaceEngine.ASF_FACE3DANGLE | FaceEngine.ASF_GENDER | FaceEngine.ASF_LIVENESS);
-        VersionInfo versionInfo = new VersionInfo();
-        faceEngine.getVersion(versionInfo);
-        Log.i(TAG, "initEngine:  init: " + afCode + "  version:" + versionInfo);
-    }
+//    private void initEngine() {
+//        faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, FaceEngine.ASF_OP_0_HIGHER_EXT,
+//                16, MAX_DETECT_NUM, FaceEngine.ASF_FACE_RECOGNITION | FaceEngine.ASF_FACE_DETECT | FaceEngine.ASF_AGE | FaceEngine.ASF_FACE3DANGLE | FaceEngine.ASF_GENDER | FaceEngine.ASF_LIVENESS);
+//        VersionInfo versionInfo = new VersionInfo();
+//        faceEngine.getVersion(versionInfo);
+//        Log.i(TAG, "initEngine:  init: " + afCode + "  version:" + versionInfo);
+//    }
 
     /**
      * 识别人脸
@@ -950,14 +984,14 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     /**
      * 提取特征值 format FaceEngine.CP_PAF_NV21
      */
-    private void extractFaceFeature(byte[] nv21, int format, FaceInfo faceInfo, FaceFeature faceFeature) {
+    private void extractFaceFeature(FaceEngine faceEngine, byte[] nv21, int format, FaceInfo faceInfo, FaceFeature faceFeature) {
         int frCode = faceEngine.extractFaceFeature(nv21, mPublisher.getEncoder().getOutputWidth(), mPublisher.getEncoder().getOutputHeight(), format, faceInfo, faceFeature);
     }
 
     /**
      * 比较特征值
      */
-    private float compareFaceFeature(FaceFeature sourceFaceFeature, FaceFeature targetFaceFeature, FaceSimilar faceSimilar) {
+    private float compareFaceFeature(FaceEngine faceEngine, FaceFeature sourceFaceFeature, FaceFeature targetFaceFeature, FaceSimilar faceSimilar) {
         faceEngine.compareFaceFeature(sourceFaceFeature, targetFaceFeature, faceSimilar);
         return faceSimilar.getScore();
     }
@@ -965,7 +999,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     /**
      * 比较特征值
      */
-    private void unInit() {
+    private void unInit(FaceEngine faceEngine) {
         if (faceEngine != null) {
             faceEngine.unInit();
         }
@@ -1030,17 +1064,19 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         //请求FR的回调
         @Override
         public void onFaceFeatureInfoGet(final byte[] nv21, @Nullable final FaceFeature faceFeature, final Integer requestId) {
+            //TODO
+            FaceEngine faceEngine = new FaceEngine();
             //FR成功
             if (faceFeature != null) {
 //                    Log.i(TAG, "onPreview: fr end = " + System.currentTimeMillis() + " trackId = " + requestId);
 
                 //不做活体检测的情况，直接搜索
                 if (!livenessDetect) {
-                    searchFace(nv21, faceFeature, requestId);
+                    searchFace(faceEngine, nv21, faceFeature, requestId);
                 }
                 //活体检测通过，搜索特征
                 else if (livenessMap.get(requestId) != null && livenessMap.get(requestId) == LivenessInfo.ALIVE) {
-                    searchFace(nv21, faceFeature, requestId);
+                    searchFace(faceEngine, nv21, faceFeature, requestId);
                 }
                 //活体检测未出结果，延迟100ms再执行该函数
                 else if (livenessMap.get(requestId) != null && livenessMap.get(requestId) == LivenessInfo.UNKNOWN) {
@@ -1064,4 +1100,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             }
         }
     };
+
+
 }

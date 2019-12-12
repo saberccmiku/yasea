@@ -1,22 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:fab="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:fab="http://schemas.android.com/apk/res-auto"
+    android:background="#00A9ED"
+    android:clipToPadding="true"
+    android:fitsSystemWindows="true"
     android:orientation="vertical"
     tools:context="net.ossrs.yasea.demo.view.MainActivity">
 
 
     <RelativeLayout
-        android:layout_above="@+id/diver"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_above="@+id/diver"
+        android:layout_marginBottom="2dp"
+        android:background="@drawable/outline">
 
         <FrameLayout
-            android:id="@+id/fl"
+            android:id="@+id/fl_video"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:visibility="gone">
 
             <net.ossrs.yasea.SrsCameraView
                 android:id="@+id/glsurfaceview_camera"
@@ -29,11 +35,31 @@
                 android:layout_height="wrap_content" />
         </FrameLayout>
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:padding="10dp"
+            android:text="工位:1003"
+            android:textColor="@color/white" />
+
+        <TextView
+            android:id="@+id/tv_online"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:padding="10dp"
+            android:text="离线中"
+            android:textColor="@android:color/holo_red_light" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:orientation="horizontal"
+            android:visibility="gone"
             android:weightSum="5">
 
             <Button
@@ -74,64 +100,66 @@
         </LinearLayout>
 
 
-        <EditText
-            android:id="@+id/url"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/accent_material_light"
-            android:textSize="14dp" />
-
-
     </RelativeLayout>
 
     <!-- 分割线 -->
     <LinearLayout
         android:id="@+id/diver"
-        android:layout_above="@+id/bottomGroup"
         android:layout_width="fill_parent"
         android:layout_height="1dp"
+        android:layout_above="@+id/bottomGroup"
         android:background="#2E2A2A"
         android:orientation="horizontal" />
 
 
     <LinearLayout
         android:id="@+id/bottomGroup"
-        android:layout_alignParentBottom="true"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         android:layout_gravity="bottom"
+        android:background="@color/white"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <!-- android:background="@drawable/bk_footer" -->
 
         <Button
-            android:id="@+id/search"
+            android:id="@+id/btn_business"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@android:color/transparent"
-            android:text="搜索"
+            android:text="业务办理"
             tools:ignore="ButtonStyle" />
 
         <Button
-            android:id="@+id/main"
+            android:id="@+id/btn_1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@android:color/transparent"
             android:button="@null"
             android:checked="true"
-            android:text="首 页"
+            android:text="预留按钮1"
             tools:ignore="ButtonStyle" />
 
         <Button
-            android:id="@+id/center"
+            android:id="@+id/btn_2"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@android:color/transparent"
-            android:text="个人中心"
+            android:text="预留按钮2"
+            tools:ignore="ButtonStyle" />
+
+        <Button
+            android:id="@+id/btn_3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            android:text="预留按钮3"
             tools:ignore="ButtonStyle" />
     </LinearLayout>
 
@@ -139,40 +167,24 @@
         android:id="@+id/multiple_actions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="100dp"
         fab:fab_addButtonColorNormal="@color/white"
         fab:fab_addButtonColorPressed="@color/white_pressed"
         fab:fab_addButtonPlusIconColor="@color/half_black"
         fab:fab_labelStyle="@style/menu_labels_style"
-        android:layout_marginBottom="100dp"
-        android:layout_marginEnd="10dp"
-        tools:ignore="RelativeOverlap">
+        tools:ignore="RelativeOverlap,RtlHardcoded">
 
         <com.custom.view.floatingactionbutton.FloatingActionButton
-            android:id="@+id/action_a"
+            android:id="@+id/fab_online"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             fab:fab_colorNormal="@color/white"
-            fab:fab_title="Action A"
-            fab:fab_colorPressed="@color/white_pressed"/>
-
-        <com.custom.view.floatingactionbutton.FloatingActionButton
-            android:id="@+id/action_b"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            fab:fab_colorNormal="@color/white"
-            fab:fab_title="Action with a very long name that won\'t fit on the screen"
-            fab:fab_colorPressed="@color/white_pressed"/>
-
+            fab:fab_colorPressed="@color/white_pressed"
+            fab:fab_title="上线/下线" />
     </com.custom.view.floatingactionbutton.FloatingActionsMenu>
 
-    <!--<android.support.v7.widget.RecyclerView-->
-    <!--android:id="@+id/recyclerView"-->
-    <!--android:layout_width="0dp"-->
-    <!--android:layout_height="match_parent"-->
-    <!--android:layout_weight="1">-->
-
-    <!--</android.support.v7.widget.RecyclerView>-->
 </RelativeLayout>

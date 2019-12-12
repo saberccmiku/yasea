@@ -1,6 +1,7 @@
 package net.ossrs.yasea.demo.adapter;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +14,7 @@ public abstract class CommonRecyclerAdapter<T> extends RecyclerView.Adapter<Comm
     private Context mContext;
     private int mLayoutId;
     private List<T> mDataList;
+    private List<CommonRecyclerViewHolder> holderList;
 
     public interface OnItemClickListener {
         void onItemClick(View view, int position);
@@ -31,19 +33,20 @@ public abstract class CommonRecyclerAdapter<T> extends RecyclerView.Adapter<Comm
         mLayoutId = layoutId;
         mDataList = dataList;
         LayoutInflater layoutInflater = LayoutInflater.from(mContext);
+        holderList = new ArrayList<>();
     }
 
 
     @Override
-    public CommonRecyclerViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public CommonRecyclerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
         return CommonRecyclerViewHolder.getViewHolder(mContext, mLayoutId, parent);
     }
 
     @Override
-    public void onBindViewHolder(final CommonRecyclerViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull final CommonRecyclerViewHolder holder, int position) {
         convertView(holder, mDataList.get(position));
-
+        holderList.add(holder);
         // 如果设置了回调，则设置点击事件
         if (mOnItemClickListener != null) {
             holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -75,5 +78,11 @@ public abstract class CommonRecyclerAdapter<T> extends RecyclerView.Adapter<Comm
         return mDataList.size();
     }
 
+    public List<CommonRecyclerViewHolder> getHolderList() {
+        return holderList;
+    }
 
+    public void setHolderList(List<CommonRecyclerViewHolder> holderList) {
+        this.holderList = holderList;
+    }
 }

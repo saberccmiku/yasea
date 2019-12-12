@@ -93,4 +93,12 @@ public class CommonRecyclerViewHolder extends RecyclerView.ViewHolder {
         }
         return this;
     }
+
+    public SparseArray<View> getmViews() {
+        return mViews;
+    }
+
+    public void setmViews(SparseArray<View> mViews) {
+        this.mViews = mViews;
+    }
 }
