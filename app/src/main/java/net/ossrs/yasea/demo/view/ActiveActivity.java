@@ -116,7 +116,7 @@ public class ActiveActivity extends BaseActivity {
                     Box<NetConfig> netConfigBox = IApplication.boxStore.boxFor(NetConfig.class);
                     netConfigBox.put(new NetConfig());
 
-                    startActivity(new Intent(ActiveActivity.this, MainActivity.class));
+                    startActivity(new Intent(ActiveActivity.this, RegisterAndRecognizeActivity.class));
                     ActiveActivity.this.finish();
                     break;
                 case "激活失败":

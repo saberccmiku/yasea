@@ -353,14 +353,7 @@ public class SrsPublisher {
             mEncoder.setMp4Muxer(mMp4Muxer);
         }
     }
-
     public SrsEncoder getEncoder() {
        return this.mEncoder;
     }
-
-    public void setFaceHandler(Handler handler){
-        this.faceHandler = handler;
-    }
-
-
 }

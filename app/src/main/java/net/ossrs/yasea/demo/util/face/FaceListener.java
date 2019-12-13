@@ -19,5 +19,5 @@ public interface FaceListener {
      * @param faceFeature    人脸特征数据
      * @param requestId 请求码
      */
-    void  onFaceFeatureInfoGet(byte[] nv21Data, @Nullable FaceFeature faceFeature, Integer requestId);
+    void  onFaceFeatureInfoGet(@Nullable FaceFeature faceFeature, Integer requestId);
 }

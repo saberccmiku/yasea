@@ -8,7 +8,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
-import android.support.v7.widget.RecyclerView;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
@@ -22,12 +21,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.arcsoft.face.AgeInfo;
+import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
 import com.arcsoft.face.FaceFeature;
 import com.arcsoft.face.FaceInfo;
 import com.arcsoft.face.FaceSimilar;
 import com.arcsoft.face.GenderInfo;
 import com.arcsoft.face.LivenessInfo;
+import com.arcsoft.face.VersionInfo;
 import com.github.faucamp.simplertmp.RtmpHandler;
 import com.seu.magicfilter.utils.MagicFilterType;
 
@@ -35,14 +36,16 @@ import net.ossrs.yasea.SrsCameraView;
 import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
-import net.ossrs.yasea.demo.CompareResult;
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.adapter.CommonRecyclerAdapter;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
+import net.ossrs.yasea.demo.faceserver.CompareResult;
+import net.ossrs.yasea.demo.faceserver.FaceServer;
 import net.ossrs.yasea.demo.net.ApiConstants;
+import net.ossrs.yasea.demo.util.ConfigUtil;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.DrawHelper;
 import net.ossrs.yasea.demo.util.face.FaceHelper;
@@ -104,7 +107,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private SrsCameraView mCameraView;
     private static final float SIMILAR_THRESHOLD = 0.8F;
 
-//    private FaceEngine faceEngine;
+    private FaceEngine faceEngine;
 //    private String appId = "H8QuDe8V8fg6oSQjCdwA8XBhGBJ2qiew4myUhPAhvY1d";
 //    private String sdkKey = "B81vkewSmkXGXASVdfwCpX9MzquuiiTp4jK93tibGiLi";
 
@@ -119,8 +122,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     private List<CompareResult> compareResultList;
 
-    private RecyclerView recyclerView;
-
     private SurfaceView surfaceView;
 
     private CompositeDisposable getFeatureDelayedDisposables = new CompositeDisposable();
@@ -131,7 +132,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     /**
      * 绘制人脸框的控件
      */
-    private FaceRectView faceRectView;
+    public FaceRectView faceRectView;
     /**
      * 是否正在搜索人脸，保证搜索操作单线程进行
      */
@@ -168,10 +169,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private void setMonitor() {
         //初始化播放控件
         initCamera();
-        //激活人脸识别
-//        activeEngine();
         //初始化人脸识别引擎
-//        initEngine();
+        initEngine();
         //设置录播界面控件
         initCameraWidget();
 
@@ -206,21 +205,23 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         btnPublish.callOnClick();
         previewSize.width = mPublisher.getEncoder().getOutputWidth();
         previewSize.height = mPublisher.getEncoder().getOutputHeight();
-//        faceHelper = new FaceHelper.Builder()
-//                .faceEngine(faceEngine)
-//                .frThreadNum(MAX_DETECT_NUM)
-//                .previewSize(previewSize)
-//                .faceListener(faceListener)
-//                .build();
+
         drawHelper = new DrawHelper(this.previewSize.width, this.previewSize.height, mCameraView.getmPreviewWidth(), mCameraView.getmPreviewHeight(), 0
-                , mPublisher.getCameraId(), false, false, false);
+                , mPublisher.getCameraId(), false);
+
+        faceHelper = new FaceHelper.Builder()
+                .faceEngine(faceEngine)
+                .frThreadNum(MAX_DETECT_NUM)
+                .previewSize(previewSize)
+                .faceListener(faceListener)
+                .currentTrackId(ConfigUtil.getTrackId(MainActivity.this.getApplicationContext()))
+                .build();
     }
 
 
     private void initCamera() {
 
         mPublisher = new SrsPublisher(mCameraView);
-        //     mPublisher.setFaceHandler(myHandler);
         mPublisher.setEncodeHandler(new SrsEncodeHandler(this), myHandler);
         mPublisher.setRtmpHandler(new RtmpHandler(this));
         mPublisher.setRecordHandler(new SrsRecordHandler(this));
@@ -369,11 +370,29 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
+        //人脸识别销毁
+        //faceHelper中可能会有FR耗时操作仍在执行，加锁防止crash
+        if (faceHelper != null) {
+            synchronized (faceHelper) {
+                unInitEngine();
+            }
+            ConfigUtil.setTrackId(this, faceHelper.getCurrentTrackId());
+            faceHelper.release();
+        } else {
+            unInitEngine();
+        }
+        if (getFeatureDelayedDisposables != null) {
+            getFeatureDelayedDisposables.dispose();
+            getFeatureDelayedDisposables.clear();
+        }
+
+        //视屏销毁
+
         if (isOnLine) {
             mPublisher.stopPublish();
             mPublisher.stopRecord();
         }
+        super.onDestroy();
     }
 
     @Override
@@ -550,15 +569,15 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
 
     private void drawPreviewInfo(List<FacePreviewInfo> facePreviewInfoList) {
-        List<DrawInfo> drawInfoList = new ArrayList<>();
-        for (int i = 0; i < facePreviewInfoList.size(); i++) {
-            String name = faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
-            Integer liveness = livenessMap.get(facePreviewInfoList.get(i).getTrackId());
-            drawInfoList.add(new DrawInfo(drawHelper.adjustRect(facePreviewInfoList.get(i).getFaceInfo().getRect()), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE,
-                    liveness == null ? LivenessInfo.UNKNOWN : liveness,
-                    name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
+        if (facePreviewInfoList != null && faceRectView != null && drawHelper != null) {
+            List<DrawInfo> drawInfoList = new ArrayList<>();
+            for (int i = 0; i < facePreviewInfoList.size(); i++) {
+                String name = faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
+                drawInfoList.add(new DrawInfo(facePreviewInfoList.get(i).getFaceInfo().getRect(), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE, LivenessInfo.UNKNOWN,
+                        name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
+            }
+            drawHelper.draw(faceRectView, drawInfoList);
         }
-        drawHelper.draw(faceRectView, drawInfoList);
     }
 
 
@@ -632,18 +651,16 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         }
     }
 
-    private class MyHandler extends Handler {
-        private final WeakReference<MainActivity> mActivity;
+    private static class MyHandler extends Handler {
+        private MainActivity activity;
 
         public MyHandler(MainActivity activity) {
-            mActivity = new WeakReference<MainActivity>(activity);
+            WeakReference<MainActivity> mActivity = new WeakReference<>(activity);
+            activity = mActivity.get();
         }
 
         @Override
         public void handleMessage(Message msg) {
-
-
-            MainActivity activity = mActivity.get();
             if (null != activity) {
                 switch (msg.what) {
                     case 1:
@@ -663,33 +680,33 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }*/
-                            if (faceRectView != null) {
-                                faceRectView.clearFaceInfo();
+                            if (activity.faceRectView != null) {
+                                activity.faceRectView.clearFaceInfo();
                             }
-                            List<FacePreviewInfo> facePreviewInfoList = faceHelper.onPreviewFrame(data);
-                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && faceRectView != null && drawHelper != null) {
-                                drawPreviewInfo(facePreviewInfoList);
+                            List<FacePreviewInfo> facePreviewInfoList = activity.faceHelper.onPreviewFrame(data);
+                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && activity.faceRectView != null && activity.drawHelper != null) {
+                                activity.drawPreviewInfo(facePreviewInfoList);
 
                             } else {
-                                if (compareResultList.size() > 0) {
-                                    compareResultList.clear();
-                                    mAdapter.notifyDataSetChanged();
+                                if (activity.compareResultList.size() > 0) {
+                                    activity.compareResultList.clear();
+                                    activity.mAdapter.notifyDataSetChanged();
                                 }
 
                             }
-                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && previewSize != null) {
+                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && activity.previewSize != null) {
                                 for (int i = 0; i < facePreviewInfoList.size(); i++) {
-                                    if (livenessDetect) {
-                                        livenessMap.put(facePreviewInfoList.get(i).getTrackId(), facePreviewInfoList.get(i).getLivenessInfo().getLiveness());
+                                    if (activity.livenessDetect) {
+                                        activity.livenessMap.put(facePreviewInfoList.get(i).getTrackId(), facePreviewInfoList.get(i).getLivenessInfo().getLiveness());
                                     }
                                     /**
                                      * 对于每个人脸，若状态为空或者为失败，则请求FR（可根据需要添加其他判断以限制FR次数），
                                      * FR回传的人脸特征结果在{@link FaceListener#onFaceFeatureInfoGet(FaceFeature, Integer)}中回传
                                      */
-                                    if (requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == null
-                                            || requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == RequestFeatureStatus.FAILED) {
-                                        requestFeatureStatusMap.put(facePreviewInfoList.get(i).getTrackId(), RequestFeatureStatus.SEARCHING);
-                                        faceHelper.requestFaceFeature(data, facePreviewInfoList.get(i).getFaceInfo(), previewSize.width, previewSize.height, FaceEngine.CP_PAF_NV21, facePreviewInfoList.get(i).getTrackId());
+                                    if (activity.requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == null
+                                            || activity.requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == RequestFeatureStatus.FAILED) {
+                                        activity.requestFeatureStatusMap.put(facePreviewInfoList.get(i).getTrackId(), RequestFeatureStatus.SEARCHING);
+                                        activity.faceHelper.requestFaceFeature(data, facePreviewInfoList.get(i).getFaceInfo(), activity.previewSize.width, activity.previewSize.height, FaceEngine.CP_PAF_NV21, facePreviewInfoList.get(i).getTrackId());
 //                            Log.i(TAG, "onPreview: fr start = " + System.currentTimeMillis() + " trackId = " + facePreviewInfoList.get(i).getTrackId());
                                     }
                                 }
@@ -708,8 +725,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             }*/
                             // fos.close();
                         } catch (Exception e) {
-                            System.out.println(e.getCause());
-                            System.out.println(e.getCause());
                             e.printStackTrace();
                         }
                         //从远程
@@ -724,15 +739,13 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         }
     }
 
-
-    private void searchFace(FaceEngine faceEngine, final byte[] nv21, final FaceFeature frFace, final Integer requestId) {
-
+    private void searchFace(final FaceFeature frFace, final Integer requestId) {
         Observable
                 .create(new ObservableOnSubscribe<CompareResult>() {
                     @Override
                     public void subscribe(ObservableEmitter<CompareResult> emitter) {
 //                        Log.i(TAG, "subscribe: fr search start = " + System.currentTimeMillis() + " trackId = " + requestId);
-                        CompareResult compareResult = getTopOfFaceLib(faceEngine, nv21, frFace);
+                        CompareResult compareResult = FaceServer.getInstance().getTopOfFaceLib(frFace);
 //                        Log.i(TAG, "subscribe: fr search end = " + System.currentTimeMillis() + " trackId = " + requestId);
                         if (compareResult == null) {
                             emitter.onError(null);
@@ -741,9 +754,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                         }
                     }
                 })
-                .subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.computation()).observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<CompareResult>() {
+
                     @Override
                     public void onSubscribe(Disposable d) {
 
@@ -775,17 +788,16 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                                 //对于多人脸搜索，假如最大显示数量为 MAX_DETECT_NUM 且有新的人脸进入，则以队列的形式移除
                                 if (compareResultList.size() >= MAX_DETECT_NUM) {
                                     compareResultList.remove(0);
-                                    // adapter.notifyItemRemoved(0);
+                                    //adapter.notifyItemRemoved(0);
                                 }
                                 //添加显示人员时，保存其trackId
                                 compareResult.setTrackId(requestId);
                                 compareResultList.add(compareResult);
-
+                                // adapter.notifyItemInserted(compareResultList.size() - 1);
                             }
-                            mAdapter.notifyDataSetChanged();
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.SUCCEED);
                             faceHelper.addName(requestId, compareResult.getUserName());
-                            mAdapter.notifyDataSetChanged();
+
                         } else {
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
                             faceHelper.addName(requestId, "VISITOR " + requestId);
@@ -804,13 +816,14 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 });
     }
 
+
     /**
      * 在特征库中搜索
      *
      * @param faceFeature 传入特征数据
      * @return 比对结果
      */
-    public CompareResult getTopOfFaceLib(FaceEngine faceEngine, byte[] nv21, FaceFeature faceFeature) {
+    public CompareResult getTopOfFaceLib(byte[] nv21, FaceFeature faceFeature) {
         if (faceEngine == null || isProcessing || faceFeature == null) {
             return null;
         }
@@ -929,23 +942,21 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     }
 
     /**
-     * 激活引擎
-     */
-//    private void activeEngine() {
-//        faceEngine = new FaceEngine();
-//        faceEngine.active(getApplicationContext(), appId, sdkKey);
-//    }
-
-    /**
      * 初始化引擎
      */
-//    private void initEngine() {
-//        faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, FaceEngine.ASF_OP_0_HIGHER_EXT,
-//                16, MAX_DETECT_NUM, FaceEngine.ASF_FACE_RECOGNITION | FaceEngine.ASF_FACE_DETECT | FaceEngine.ASF_AGE | FaceEngine.ASF_FACE3DANGLE | FaceEngine.ASF_GENDER | FaceEngine.ASF_LIVENESS);
-//        VersionInfo versionInfo = new VersionInfo();
-//        faceEngine.getVersion(versionInfo);
-//        Log.i(TAG, "initEngine:  init: " + afCode + "  version:" + versionInfo);
-//    }
+    private void initEngine() {
+        faceEngine = new FaceEngine();
+        afCode = faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, ConfigUtil.getFtOrient(this),
+                16, MAX_DETECT_NUM, FaceEngine.ASF_FACE_RECOGNITION | FaceEngine.ASF_FACE_DETECT | FaceEngine.ASF_LIVENESS);
+        VersionInfo versionInfo = new VersionInfo();
+        faceEngine.getVersion(versionInfo);
+        Log.i(TAG, "initEngine:  init: " + afCode + "  version:" + versionInfo);
+
+        if (afCode != ErrorInfo.MOK) {
+            Toast.makeText(this, "初始化引擎" + afCode, Toast.LENGTH_SHORT).show();
+        }
+    }
+
 
     /**
      * 识别人脸
@@ -997,11 +1008,13 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     }
 
     /**
-     * 比较特征值
+     * 销毁引擎
      */
-    private void unInit(FaceEngine faceEngine) {
-        if (faceEngine != null) {
-            faceEngine.unInit();
+    private void unInitEngine() {
+
+        if (afCode == ErrorInfo.MOK) {
+            afCode = faceEngine.unInit();
+            Log.i(TAG, "unInitEngine: " + afCode);
         }
     }
 
@@ -1061,22 +1074,19 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             Log.e(TAG, "onFail: " + e.getMessage());
         }
 
-        //请求FR的回调
         @Override
-        public void onFaceFeatureInfoGet(final byte[] nv21, @Nullable final FaceFeature faceFeature, final Integer requestId) {
-            //TODO
-            FaceEngine faceEngine = new FaceEngine();
+        public void onFaceFeatureInfoGet(@Nullable FaceFeature faceFeature, Integer requestId) {
             //FR成功
             if (faceFeature != null) {
 //                    Log.i(TAG, "onPreview: fr end = " + System.currentTimeMillis() + " trackId = " + requestId);
 
                 //不做活体检测的情况，直接搜索
                 if (!livenessDetect) {
-                    searchFace(faceEngine, nv21, faceFeature, requestId);
+                    searchFace(faceFeature, requestId);
                 }
                 //活体检测通过，搜索特征
                 else if (livenessMap.get(requestId) != null && livenessMap.get(requestId) == LivenessInfo.ALIVE) {
-                    searchFace(faceEngine, nv21, faceFeature, requestId);
+                    searchFace(faceFeature, requestId);
                 }
                 //活体检测未出结果，延迟100ms再执行该函数
                 else if (livenessMap.get(requestId) != null && livenessMap.get(requestId) == LivenessInfo.UNKNOWN) {
@@ -1084,7 +1094,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {
-                                    onFaceFeatureInfoGet(nv21, faceFeature, requestId);
+                                    onFaceFeatureInfoGet(faceFeature, requestId);
                                 }
                             }));
                 }
@@ -1099,6 +1109,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
             }
         }
+
     };
 
 

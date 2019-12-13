@@ -1,11 +1,10 @@
-package net.ossrs.yasea.demo;
+package net.ossrs.yasea.demo.faceserver;
 
 
 
 public class CompareResult {
     private String userName;
     private float similar;
-    private String sex;
     private int trackId;
 
     public CompareResult(String userName, float similar) {
@@ -13,14 +12,6 @@ public class CompareResult {
         this.similar = similar;
     }
 
-
-    public String getSex() {
-        return sex;
-    }
-
-    public void setSex(String sex) {
-        this.sex = sex;
-    }
 
     public String getUserName() {
         return userName;

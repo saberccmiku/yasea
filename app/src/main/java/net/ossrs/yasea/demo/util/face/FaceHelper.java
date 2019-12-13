@@ -49,6 +49,7 @@ public class FaceHelper {
     private List<FaceInfo> formerFaceInfoList = new ArrayList<>();
     private List<FacePreviewInfo> facePreviewInfoList = new ArrayList<>();
     private ConcurrentHashMap<Integer, String> nameMap = new ConcurrentHashMap<>();
+
     private FaceHelper(Builder builder) {
         faceEngine = builder.faceEngine;
         faceListener = builder.faceListener;
@@ -81,7 +82,9 @@ public class FaceHelper {
                 faceRecognizeRunnables.add(new FaceRecognizeRunnable(nv21, faceInfo, width, height, format, trackId));
                 executor.execute(faceRecognizeRunnables.poll());
             } else {
-                faceListener.onFaceFeatureInfoGet(nv21,null, trackId);
+                FaceFeature faceFeature = new FaceFeature();
+                faceFeature.setFeatureData(nv21);
+                faceListener.onFaceFeatureInfoGet(faceFeature, trackId);
             }
         }
     }
@@ -184,9 +187,8 @@ public class FaceHelper {
                     e.printStackTrace();
                 }
 
-
+                FaceFeature faceFeature = new FaceFeature(jpegData);
                 if (faceEngine != null) {
-                    FaceFeature faceFeature = new FaceFeature();
                     long frStartTime = System.currentTimeMillis();
                     int frCode;
                     synchronized (FaceHelper.this) {
@@ -194,13 +196,13 @@ public class FaceHelper {
                     }
                     if (frCode == ErrorInfo.MOK) {
 //                        Log.i(TAG, "run: fr costTime = " + (System.currentTimeMillis() - frStartTime) + "ms");
-                        faceListener.onFaceFeatureInfoGet(jpegData,faceFeature, trackId);
+                        faceListener.onFaceFeatureInfoGet(faceFeature, trackId);
                     } else {
-                        faceListener.onFaceFeatureInfoGet(jpegData,null, trackId);
+                        faceListener.onFaceFeatureInfoGet(faceFeature, trackId);
                         faceListener.onFail(new Exception("fr failed errorCode is " + frCode));
                     }
                 } else {
-                    faceListener.onFaceFeatureInfoGet(jpegData,null, trackId);
+                    faceListener.onFaceFeatureInfoGet(faceFeature, trackId);
                     faceListener.onFail(new Exception("fr failed ,frEngine is null"));
                 }
                 if (faceRecognizeRunnables != null && faceRecognizeRunnables.size() > 0) {
@@ -235,7 +237,7 @@ public class FaceHelper {
                 //遍历上一次人脸框
                 for (int j = 0; j < formerFaceInfoList.size(); j++) {
                     //若是同一张人脸
-                    if (TrackUtil.isSameFace( formerFaceInfoList.get(j), ftFaceList.get(i))) {
+                    if (TrackUtil.isSameFace(formerFaceInfoList.get(j), ftFaceList.get(i))) {
                         //记录ID
                         currentTrackIdList.set(i, formerTrackIdList.get(j));
                         break;

@@ -65,6 +65,8 @@ dependencies {
     //支持浏览器查看数据库数据，如果不需要可以去掉dependencies 代码块
     debugImplementation "io.objectbox:objectbox-android-objectbrowser:$objectboxVersion"
     releaseImplementation "io.objectbox:objectbox-android:$objectboxVersion"
+    //
+    implementation 'com.github.bumptech.glide:glide:4.7.1'
 }
 
 //一定放在dependencies代码块下
