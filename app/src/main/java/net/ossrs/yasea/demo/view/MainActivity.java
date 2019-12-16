@@ -1,27 +1,32 @@
 package net.ossrs.yasea.demo.view;
 
+import android.Manifest;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.hardware.Camera;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.arcsoft.face.AgeInfo;
-import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
 import com.arcsoft.face.FaceFeature;
 import com.arcsoft.face.FaceInfo;
@@ -37,16 +42,10 @@ import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
 import net.ossrs.yasea.demo.R;
-import net.ossrs.yasea.demo.adapter.CommonRecyclerAdapter;
-import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
 import net.ossrs.yasea.demo.faceserver.CompareResult;
-import net.ossrs.yasea.demo.faceserver.FaceServer;
-import net.ossrs.yasea.demo.net.ApiConstants;
-import net.ossrs.yasea.demo.util.ConfigUtil;
-import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.DrawHelper;
 import net.ossrs.yasea.demo.util.face.FaceHelper;
 import net.ossrs.yasea.demo.util.face.FaceListener;
@@ -67,8 +66,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import butterknife.BindView;
-import butterknife.OnClick;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -86,14 +83,11 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListener,
-        SrsRecordHandler.SrsRecordListener, SrsEncodeHandler.SrsEncodeListener, View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements RtmpHandler.RtmpListener,
+        SrsRecordHandler.SrsRecordListener, SrsEncodeHandler.SrsEncodeListener {
 
-    private static final String TAG = MainActivity.class.getName();
-
-    //是否在线
-    private boolean isOnLine;
-
+    private static final String TAG = "Yasea";
+    private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
     private Button btnPublish;
     private Button btnSwitchCamera;
     private Button btnRecord;
@@ -101,15 +95,26 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private Button btnPause;
 
     private SharedPreferences sp;
-    private String rtmpUrl = ApiConstants.rtmpUrl;
+    private String rtmpUrl = "rtmp://192.168.1.25/hls/test";
     private String recPath = Environment.getExternalStorageDirectory().getPath() + "/test.mp4";
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
     private static final float SIMILAR_THRESHOLD = 0.8F;
 
+
+    /**
+     * 所需的所有权限信息
+     */
+    private static final String[] NEEDED_PERMISSIONS = new String[]{
+            Manifest.permission.CAMERA,
+            Manifest.permission.READ_PHONE_STATE
+
+    };
+
+
     private FaceEngine faceEngine;
-//    private String appId = "H8QuDe8V8fg6oSQjCdwA8XBhGBJ2qiew4myUhPAhvY1d";
-//    private String sdkKey = "B81vkewSmkXGXASVdfwCpX9MzquuiiTp4jK93tibGiLi";
+    private String appId = "H8QuDe8V8fg6oSQjCdwA8XBhGBJ2qiew4myUhPAhvY1d";
+    private String sdkKey = "B81vkewSmkXGXASVdfwCpX9MzquuiiTp4jK93tibGiLi";
 
     private List<FaceInfo> faceInfoList;
 
@@ -132,7 +137,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     /**
      * 绘制人脸框的控件
      */
-    public FaceRectView faceRectView;
+    private FaceRectView faceRectView;
     /**
      * 是否正在搜索人脸，保证搜索操作单线程进行
      */
@@ -142,93 +147,44 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private ConcurrentHashMap<Integer, Integer> requestFeatureStatusMap = new ConcurrentHashMap<>();
     private Camera.Size previewSize;
 
-    @BindView(R.id.fl_video)
-    FrameLayout flVideo;
-
-
     @Override
-    public int getLayoutId() {
-        return R.layout.activity_main;
-    }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-    @Override
-    public void initView() {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        setContentView(R.layout.activity_main);
 
         // response screen rotation event
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
 
-        // restore data.
-        sp = getSharedPreferences(Constants.SHARED_PREFERENCES, MODE_PRIVATE);
-        rtmpUrl = sp.getString("rtmpUrl", rtmpUrl);
-        //获取布局控件对象
-        findView();
-
-    }
-
-    private void setMonitor() {
-        //初始化播放控件
-        initCamera();
-        //初始化人脸识别引擎
-        initEngine();
-        //设置录播界面控件
-        initCameraWidget();
-
-    }
-
-    @BindView(R.id.tv_online)
-    TextView tvOnline;
-
-    @OnClick(R.id.fab_online)
-    public void setOnLine() {
-        isOnLine = !isOnLine;
-        if (!isOnLine) {
-            tvOnline.setText("离线中");
-            flVideo.setVisibility(View.GONE);
-            if (mPublisher != null) {
-                mPublisher.stopPublish();
-                mPublisher.stopRecord();
-                mPublisher.stopCamera();
-            }
-        } else {
-            tvOnline.setText("工作中");
-            flVideo.setVisibility(View.VISIBLE);
-            //设置监控
-            setMonitor();
+        if (!checkPermissions(NEEDED_PERMISSIONS)) {
+            ActivityCompat.requestPermissions(this, NEEDED_PERMISSIONS, ACTION_REQUEST_PERMISSIONS);
+            return;
         }
-    }
+        // restore data.
+        sp = getSharedPreferences("Yasea", MODE_PRIVATE);
+        rtmpUrl = sp.getString("rtmpUrl", rtmpUrl);
 
-    private void initCameraWidget() {
-
-        previewSize = mCameraView.getCamera().getParameters().getPreviewSize();
-        btnPublish.setText("发布");
-        btnPublish.callOnClick();
-        previewSize.width = mPublisher.getEncoder().getOutputWidth();
-        previewSize.height = mPublisher.getEncoder().getOutputHeight();
-
-        drawHelper = new DrawHelper(this.previewSize.width, this.previewSize.height, mCameraView.getmPreviewWidth(), mCameraView.getmPreviewHeight(), 0
-                , mPublisher.getCameraId(), false);
-
-        faceHelper = new FaceHelper.Builder()
-                .faceEngine(faceEngine)
-                .frThreadNum(MAX_DETECT_NUM)
-                .previewSize(previewSize)
-                .faceListener(faceListener)
-                .currentTrackId(ConfigUtil.getTrackId(MainActivity.this.getApplicationContext()))
-                .build();
-    }
-
-
-    private void initCamera() {
+        btnPublish = (Button) findViewById(R.id.publish);
+        btnSwitchCamera = (Button) findViewById(R.id.swCam);
+        btnRecord = (Button) findViewById(R.id.record);
+        btnSwitchEncoder = (Button) findViewById(R.id.swEnc);
+        btnPause = (Button) findViewById(R.id.pause);
+        btnPause.setEnabled(false);
+        mCameraView = findViewById(R.id.glsurfaceview_camera);
 
         mPublisher = new SrsPublisher(mCameraView);
+        //     mPublisher.setFaceHandler(myHandler);
         mPublisher.setEncodeHandler(new SrsEncodeHandler(this), myHandler);
         mPublisher.setRtmpHandler(new RtmpHandler(this));
         mPublisher.setRecordHandler(new SrsRecordHandler(this));
-        mPublisher.setPreviewResolution(960, 540);
-        mPublisher.setOutputResolution(960, 540);
+        mPublisher.setPreviewResolution(1000, 1000);
+        mPublisher.setOutputResolution(1000, 1000);
+        //mPublisher.setPreviewResolution(640, 360);
+        //mPublisher.setOutputResolution(360, 640);
         mPublisher.setVideoHDMode();
         mPublisher.startCamera();
+        //recyclerView=findViewById(R.id.recyclerView);
         faceRectView = findViewById(R.id.face_rect_view);
         faceInfoList = new ArrayList<>();
         faceRegisterInfoList = new ArrayList<>();
@@ -244,29 +200,107 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
 
         });
+
+
+        btnPublish.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (btnPublish.getText().toString().contentEquals("publish")) {
+                    SharedPreferences.Editor editor = sp.edit();
+                    editor.putString("rtmpUrl", rtmpUrl);
+                    editor.apply();
+
+                    mPublisher.startPublish(rtmpUrl);
+                    mPublisher.startCamera();
+
+                    if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
+                        Toast.makeText(getApplicationContext(), "Use hard encoder", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Use soft encoder", Toast.LENGTH_SHORT).show();
+                    }
+                    btnPublish.setText("stop");
+                    btnSwitchEncoder.setEnabled(false);
+                    btnPause.setEnabled(true);
+                } else if (btnPublish.getText().toString().contentEquals("stop")) {
+                    mPublisher.stopPublish();
+                    mPublisher.stopRecord();
+                    btnPublish.setText("publish");
+                    btnRecord.setText("record");
+                    btnSwitchEncoder.setEnabled(true);
+                    btnPause.setEnabled(false);
+                }
+            }
+        });
+        btnPause.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (btnPause.getText().toString().equals("Pause")) {
+                    mPublisher.pausePublish();
+                    btnPause.setText("resume");
+                } else {
+                    mPublisher.resumePublish();
+                    btnPause.setText("Pause");
+                }
+            }
+        });
+
+        btnSwitchCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPublisher.switchCameraFace((mPublisher.getCameraId() + 1) % Camera.getNumberOfCameras());
+            }
+        });
+
+        btnRecord.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (btnRecord.getText().toString().contentEquals("record")) {
+                    if (mPublisher.startRecord(recPath)) {
+                        btnRecord.setText("pause");
+                    }
+                } else if (btnRecord.getText().toString().contentEquals("pause")) {
+                    mPublisher.pauseRecord();
+                    btnRecord.setText("resume");
+                } else if (btnRecord.getText().toString().contentEquals("resume")) {
+                    mPublisher.resumeRecord();
+                    btnRecord.setText("pause");
+                }
+            }
+        });
+
+        btnSwitchEncoder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
+                    mPublisher.switchToSoftEncoder();
+                    btnSwitchEncoder.setText("hard encoder");
+                } else if (btnSwitchEncoder.getText().toString().contentEquals("hard encoder")) {
+                    mPublisher.switchToHardEncoder();
+                    btnSwitchEncoder.setText("soft encoder");
+                }
+            }
+        });
+        //initRecycleView();
+        //  activeEngine();
+        // initEngine();
+        activeEngine();
+        initEngine();
+        previewSize = mCameraView.getCamera().getParameters().getPreviewSize();
+        btnPublish.setText("publish");
+        btnPublish.callOnClick();
+        previewSize.width = mPublisher.getEncoder().getOutputWidth();
+        previewSize.height = mPublisher.getEncoder().getOutputHeight();
+        faceHelper = new FaceHelper.Builder()
+                .faceEngine(faceEngine)
+                .frThreadNum(MAX_DETECT_NUM)
+                .previewSize(previewSize)
+                .faceListener(faceListener)
+                .build();
+        ViewGroup.LayoutParams lp = mCameraView.getLayoutParams();
+        drawHelper = new DrawHelper(this.previewSize.width, this.previewSize.height, mCameraView.getmPreviewWidth(), mCameraView.getmPreviewHeight(), 0
+                , mPublisher.getCameraId(), false, false, false);
+
     }
-
-    private void findView() {
-        flVideo.setVisibility(View.GONE);
-        // initialize url.
-        btnPublish = findViewById(R.id.publish);
-        btnSwitchCamera = findViewById(R.id.swCam);
-        btnRecord = findViewById(R.id.record);
-        btnSwitchEncoder = findViewById(R.id.swEnc);
-        btnPause = findViewById(R.id.pause);
-        btnPause.setEnabled(false);
-        mCameraView = findViewById(R.id.glsurfaceview_camera);
-
-
-        //绑定点击事件
-        btnPublish.setOnClickListener(this);
-        btnPause.setOnClickListener(this);
-        btnSwitchCamera.setOnClickListener(this);
-        btnRecord.setOnClickListener(this);
-        btnSwitchEncoder.setOnClickListener(this);
-    }
-
-    private CommonRecyclerAdapter mAdapter;
 
 
     @Override
@@ -344,7 +378,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     @Override
     protected void onStart() {
         super.onStart();
-        if (isOnLine && mPublisher.getCamera() == null) {
+        if (mPublisher.getCamera() == null) {
             //if the camera was busy and available again
             mPublisher.startCamera();
         }
@@ -353,46 +387,22 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     @Override
     protected void onResume() {
         super.onResume();
-        if (isOnLine) {
-            final Button btn = (Button) findViewById(R.id.publish);
-            btn.setEnabled(true);
-            mPublisher.resumeRecord();
-        }
+        final Button btn = (Button) findViewById(R.id.publish);
+        btn.setEnabled(true);
+        mPublisher.resumeRecord();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (isOnLine) {
-            mPublisher.pauseRecord();
-        }
+        mPublisher.pauseRecord();
     }
 
     @Override
     protected void onDestroy() {
-        //人脸识别销毁
-        //faceHelper中可能会有FR耗时操作仍在执行，加锁防止crash
-        if (faceHelper != null) {
-            synchronized (faceHelper) {
-                unInitEngine();
-            }
-            ConfigUtil.setTrackId(this, faceHelper.getCurrentTrackId());
-            faceHelper.release();
-        } else {
-            unInitEngine();
-        }
-        if (getFeatureDelayedDisposables != null) {
-            getFeatureDelayedDisposables.dispose();
-            getFeatureDelayedDisposables.clear();
-        }
-
-        //视屏销毁
-
-        if (isOnLine) {
-            mPublisher.stopPublish();
-            mPublisher.stopRecord();
-        }
         super.onDestroy();
+        mPublisher.stopPublish();
+        mPublisher.stopRecord();
     }
 
     @Override
@@ -400,9 +410,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         super.onConfigurationChanged(newConfig);
         mPublisher.stopEncode();
         mPublisher.stopRecord();
-        btnRecord.setText("录制");
+        btnRecord.setText("record");
         mPublisher.setScreenOrientation(newConfig.orientation);
-        if (btnPublish.getText().toString().contentEquals("停止")) {
+        if (btnPublish.getText().toString().contentEquals("stop")) {
             mPublisher.startEncode();
         }
         mPublisher.startCamera();
@@ -435,8 +445,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
             mPublisher.stopPublish();
             mPublisher.stopRecord();
-            btnPublish.setText("发布");
-            btnRecord.setText("录制");
+            btnPublish.setText("publish");
+            btnRecord.setText("record");
             btnSwitchEncoder.setEnabled(true);
         } catch (Exception e1) {
             //
@@ -569,98 +579,32 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
 
     private void drawPreviewInfo(List<FacePreviewInfo> facePreviewInfoList) {
-        if (facePreviewInfoList != null && faceRectView != null && drawHelper != null) {
-            List<DrawInfo> drawInfoList = new ArrayList<>();
-            for (int i = 0; i < facePreviewInfoList.size(); i++) {
-                String name = faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
-                drawInfoList.add(new DrawInfo(facePreviewInfoList.get(i).getFaceInfo().getRect(), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE, LivenessInfo.UNKNOWN,
-                        name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
-            }
-            drawHelper.draw(faceRectView, drawInfoList);
+        List<DrawInfo> drawInfoList = new ArrayList<>();
+        for (int i = 0; i < facePreviewInfoList.size(); i++) {
+            String name = faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
+            Integer liveness = livenessMap.get(facePreviewInfoList.get(i).getTrackId());
+            drawInfoList.add(new DrawInfo(drawHelper.adjustRect(facePreviewInfoList.get(i).getFaceInfo().getRect()), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE,
+                    liveness == null ? LivenessInfo.UNKNOWN : liveness,
+                    name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
         }
+        drawHelper.draw(faceRectView, drawInfoList);
     }
 
 
     private final MyHandler myHandler = new MyHandler(this);
 
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.publish:
-                if (btnPublish.getText().toString().contentEquals("发布")) {
-                    SharedPreferences.Editor editor = sp.edit();
-                    editor.putString("rtmpUrl", rtmpUrl);
-                    editor.apply();
-
-                    mPublisher.startPublish(rtmpUrl);
-                    mPublisher.startCamera();
-
-                    if (btnSwitchEncoder.getText().toString().contentEquals("软编码")) {
-                        Toast.makeText(getApplicationContext(), "Use hard encoder", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getApplicationContext(), "Use soft encoder", Toast.LENGTH_SHORT).show();
-                    }
-                    btnPublish.setText("停止");
-                    btnSwitchEncoder.setEnabled(false);
-                    btnPause.setEnabled(true);
-                } else if (btnPublish.getText().toString().contentEquals("停止")) {
-                    mPublisher.stopPublish();
-                    mPublisher.stopRecord();
-                    btnPublish.setText("发布");
-                    btnRecord.setText("录制");
-                    btnSwitchEncoder.setEnabled(true);
-                    btnPause.setEnabled(false);
-                }
-                break;
-            case R.id.pause:
-                if (btnPause.getText().toString().equals("暂停")) {
-                    mPublisher.pausePublish();
-                    btnPause.setText("重启");
-                } else {
-                    mPublisher.resumePublish();
-                    btnPause.setText("暂停");
-                }
-                break;
-            case R.id.swCam:
-                mPublisher.switchCameraFace((mPublisher.getCameraId() + 1) % Camera.getNumberOfCameras());
-                break;
-            case R.id.record:
-                if (btnRecord.getText().toString().contentEquals("录制")) {
-                    if (mPublisher.startRecord(recPath)) {
-                        btnRecord.setText("暂停");
-                    }
-                } else if (btnRecord.getText().toString().contentEquals("暂停")) {
-                    mPublisher.pauseRecord();
-                    btnRecord.setText("重启");
-                } else if (btnRecord.getText().toString().contentEquals("重启")) {
-                    mPublisher.resumeRecord();
-                    btnRecord.setText("暂停");
-                }
-                break;
-            case R.id.swEnc:
-                if (btnSwitchEncoder.getText().toString().contentEquals("软编码")) {
-                    mPublisher.switchToSoftEncoder();
-                    btnSwitchEncoder.setText("硬编码");
-                } else if (btnSwitchEncoder.getText().toString().contentEquals("硬编码")) {
-                    mPublisher.switchToHardEncoder();
-                    btnSwitchEncoder.setText("软编码");
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    private static class MyHandler extends Handler {
-        private MainActivity activity;
+    private class MyHandler extends Handler {
+        private final WeakReference<MainActivity> mActivity;
 
         public MyHandler(MainActivity activity) {
-            WeakReference<MainActivity> mActivity = new WeakReference<>(activity);
-            activity = mActivity.get();
+            mActivity = new WeakReference<MainActivity>(activity);
         }
 
         @Override
         public void handleMessage(Message msg) {
+
+
+            MainActivity activity = mActivity.get();
             if (null != activity) {
                 switch (msg.what) {
                     case 1:
@@ -680,33 +624,33 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }*/
-                            if (activity.faceRectView != null) {
-                                activity.faceRectView.clearFaceInfo();
+                            if (faceRectView != null) {
+                                faceRectView.clearFaceInfo();
                             }
-                            List<FacePreviewInfo> facePreviewInfoList = activity.faceHelper.onPreviewFrame(data);
-                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && activity.faceRectView != null && activity.drawHelper != null) {
-                                activity.drawPreviewInfo(facePreviewInfoList);
+                            List<FacePreviewInfo> facePreviewInfoList = faceHelper.onPreviewFrame(data);
+                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && faceRectView != null && drawHelper != null) {
+                                drawPreviewInfo(facePreviewInfoList);
 
                             } else {
-                                if (activity.compareResultList.size() > 0) {
-                                    activity.compareResultList.clear();
-                                    activity.mAdapter.notifyDataSetChanged();
+                                if (compareResultList.size() > 0) {
+                                    compareResultList.clear();
+                                    //mAdapter.notifyDataSetChanged();
                                 }
 
                             }
-                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && activity.previewSize != null) {
+                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && previewSize != null) {
                                 for (int i = 0; i < facePreviewInfoList.size(); i++) {
-                                    if (activity.livenessDetect) {
-                                        activity.livenessMap.put(facePreviewInfoList.get(i).getTrackId(), facePreviewInfoList.get(i).getLivenessInfo().getLiveness());
+                                    if (livenessDetect) {
+                                        livenessMap.put(facePreviewInfoList.get(i).getTrackId(), facePreviewInfoList.get(i).getLivenessInfo().getLiveness());
                                     }
                                     /**
                                      * 对于每个人脸，若状态为空或者为失败，则请求FR（可根据需要添加其他判断以限制FR次数），
                                      * FR回传的人脸特征结果在{@link FaceListener#onFaceFeatureInfoGet(FaceFeature, Integer)}中回传
                                      */
-                                    if (activity.requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == null
-                                            || activity.requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == RequestFeatureStatus.FAILED) {
-                                        activity.requestFeatureStatusMap.put(facePreviewInfoList.get(i).getTrackId(), RequestFeatureStatus.SEARCHING);
-                                        activity.faceHelper.requestFaceFeature(data, facePreviewInfoList.get(i).getFaceInfo(), activity.previewSize.width, activity.previewSize.height, FaceEngine.CP_PAF_NV21, facePreviewInfoList.get(i).getTrackId());
+                                    if (requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == null
+                                            || requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == RequestFeatureStatus.FAILED) {
+                                        requestFeatureStatusMap.put(facePreviewInfoList.get(i).getTrackId(), RequestFeatureStatus.SEARCHING);
+                                        faceHelper.requestFaceFeature(data, facePreviewInfoList.get(i).getFaceInfo(), previewSize.width, previewSize.height, FaceEngine.CP_PAF_NV21, facePreviewInfoList.get(i).getTrackId());
 //                            Log.i(TAG, "onPreview: fr start = " + System.currentTimeMillis() + " trackId = " + facePreviewInfoList.get(i).getTrackId());
                                     }
                                 }
@@ -725,11 +669,16 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             }*/
                             // fos.close();
                         } catch (Exception e) {
+                            System.out.println(e.getCause());
+                            System.out.println(e.getCause());
                             e.printStackTrace();
                         }
                         //从远程
                         break;
                     case 2:
+                        //         initRecycleView();
+                        //   recyclerView.getAdapter().
+                        //           recyclerView.getAdapter().notifyDataSetChanged();
                         break;
                     case 3:
                         break;
@@ -739,13 +688,15 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         }
     }
 
-    private void searchFace(final FaceFeature frFace, final Integer requestId) {
+
+    private void searchFace(final byte[] nv21, final FaceFeature frFace, final Integer requestId) {
+
         Observable
                 .create(new ObservableOnSubscribe<CompareResult>() {
                     @Override
                     public void subscribe(ObservableEmitter<CompareResult> emitter) {
 //                        Log.i(TAG, "subscribe: fr search start = " + System.currentTimeMillis() + " trackId = " + requestId);
-                        CompareResult compareResult = FaceServer.getInstance().getTopOfFaceLib(frFace);
+                        CompareResult compareResult = getTopOfFaceLib(nv21, frFace);
 //                        Log.i(TAG, "subscribe: fr search end = " + System.currentTimeMillis() + " trackId = " + requestId);
                         if (compareResult == null) {
                             emitter.onError(null);
@@ -754,9 +705,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                         }
                     }
                 })
-                .subscribeOn(Schedulers.computation()).observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<CompareResult>() {
-
                     @Override
                     public void onSubscribe(Disposable d) {
 
@@ -788,16 +739,17 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                                 //对于多人脸搜索，假如最大显示数量为 MAX_DETECT_NUM 且有新的人脸进入，则以队列的形式移除
                                 if (compareResultList.size() >= MAX_DETECT_NUM) {
                                     compareResultList.remove(0);
-                                    //adapter.notifyItemRemoved(0);
+                                    // adapter.notifyItemRemoved(0);
                                 }
                                 //添加显示人员时，保存其trackId
                                 compareResult.setTrackId(requestId);
                                 compareResultList.add(compareResult);
-                                // adapter.notifyItemInserted(compareResultList.size() - 1);
+
                             }
+                            //mAdapter.notifyDataSetChanged();
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.SUCCEED);
                             faceHelper.addName(requestId, compareResult.getUserName());
-
+                            // mAdapter.notifyDataSetChanged();
                         } else {
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
                             faceHelper.addName(requestId, "VISITOR " + requestId);
@@ -815,7 +767,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     }
                 });
     }
-
 
     /**
      * 在特征库中搜索
@@ -894,7 +845,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     private JSONObject synRequest(RequestBody requestBody) {
         Request request = new Request.Builder()
-                .url("http://192.168.1.25:9089/faceSearch1")
+                .url("http://192.168.0.61:8080/faceSearch1")
                 .post(requestBody)
                 .build();
         Call call = mHttpClient.newCall(request);
@@ -913,7 +864,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     private void asyRequest(RequestBody requestBody) {
         final Request request = new Request.Builder()
-                .url("http://192.168.1.25:9089/faceSearch1")
+                .url("http://192.168.0.40:8080/faceSearch1")
                 .post(requestBody)
                 .build();
         Call call = mHttpClient.newCall(request);
@@ -942,21 +893,23 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     }
 
     /**
+     * 激活引擎
+     */
+    private void activeEngine() {
+        faceEngine = new FaceEngine();
+        faceEngine.active(getApplicationContext(), appId, sdkKey);
+    }
+
+    /**
      * 初始化引擎
      */
     private void initEngine() {
-        faceEngine = new FaceEngine();
-        afCode = faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, ConfigUtil.getFtOrient(this),
-                16, MAX_DETECT_NUM, FaceEngine.ASF_FACE_RECOGNITION | FaceEngine.ASF_FACE_DETECT | FaceEngine.ASF_LIVENESS);
+        faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, FaceEngine.ASF_OP_0_HIGHER_EXT,
+                16, MAX_DETECT_NUM, FaceEngine.ASF_FACE_RECOGNITION | FaceEngine.ASF_FACE_DETECT | FaceEngine.ASF_AGE | FaceEngine.ASF_FACE3DANGLE | FaceEngine.ASF_GENDER | FaceEngine.ASF_LIVENESS);
         VersionInfo versionInfo = new VersionInfo();
         faceEngine.getVersion(versionInfo);
         Log.i(TAG, "initEngine:  init: " + afCode + "  version:" + versionInfo);
-
-        if (afCode != ErrorInfo.MOK) {
-            Toast.makeText(this, "初始化引擎" + afCode, Toast.LENGTH_SHORT).show();
-        }
     }
-
 
     /**
      * 识别人脸
@@ -995,26 +948,24 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     /**
      * 提取特征值 format FaceEngine.CP_PAF_NV21
      */
-    private void extractFaceFeature(FaceEngine faceEngine, byte[] nv21, int format, FaceInfo faceInfo, FaceFeature faceFeature) {
+    private void extractFaceFeature(byte[] nv21, int format, FaceInfo faceInfo, FaceFeature faceFeature) {
         int frCode = faceEngine.extractFaceFeature(nv21, mPublisher.getEncoder().getOutputWidth(), mPublisher.getEncoder().getOutputHeight(), format, faceInfo, faceFeature);
     }
 
     /**
      * 比较特征值
      */
-    private float compareFaceFeature(FaceEngine faceEngine, FaceFeature sourceFaceFeature, FaceFeature targetFaceFeature, FaceSimilar faceSimilar) {
+    private float compareFaceFeature(FaceFeature sourceFaceFeature, FaceFeature targetFaceFeature, FaceSimilar faceSimilar) {
         faceEngine.compareFaceFeature(sourceFaceFeature, targetFaceFeature, faceSimilar);
         return faceSimilar.getScore();
     }
 
     /**
-     * 销毁引擎
+     * 比较特征值
      */
-    private void unInitEngine() {
-
-        if (afCode == ErrorInfo.MOK) {
-            afCode = faceEngine.unInit();
-            Log.i(TAG, "unInitEngine: " + afCode);
+    private void unInit() {
+        if (faceEngine != null) {
+            faceEngine.unInit();
         }
     }
 
@@ -1076,17 +1027,23 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
         @Override
         public void onFaceFeatureInfoGet(@Nullable FaceFeature faceFeature, Integer requestId) {
+
+        }
+
+        //请求FR的回调
+        @Override
+        public void onFaceFeatureInfoGet(final byte[] nv21, @Nullable final FaceFeature faceFeature, final Integer requestId) {
             //FR成功
             if (faceFeature != null) {
 //                    Log.i(TAG, "onPreview: fr end = " + System.currentTimeMillis() + " trackId = " + requestId);
 
                 //不做活体检测的情况，直接搜索
                 if (!livenessDetect) {
-                    searchFace(faceFeature, requestId);
+                    searchFace(nv21, faceFeature, requestId);
                 }
                 //活体检测通过，搜索特征
                 else if (livenessMap.get(requestId) != null && livenessMap.get(requestId) == LivenessInfo.ALIVE) {
-                    searchFace(faceFeature, requestId);
+                    searchFace(nv21, faceFeature, requestId);
                 }
                 //活体检测未出结果，延迟100ms再执行该函数
                 else if (livenessMap.get(requestId) != null && livenessMap.get(requestId) == LivenessInfo.UNKNOWN) {
@@ -1094,7 +1051,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             .subscribe(new Consumer<Long>() {
                                 @Override
                                 public void accept(Long aLong) {
-                                    onFaceFeatureInfoGet(faceFeature, requestId);
+                                    onFaceFeatureInfoGet(nv21, faceFeature, requestId);
                                 }
                             }));
                 }
@@ -1109,8 +1066,33 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
             }
         }
-
     };
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == ACTION_REQUEST_PERMISSIONS) {
+            boolean isAllGranted = true;
+            for (int grantResult : grantResults) {
+                isAllGranted &= (grantResult == PackageManager.PERMISSION_GRANTED);
+            }
+            if (isAllGranted) {
+                activeEngine();
+            } else {
+                Toast.makeText(MainActivity.this, "权限不足", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private boolean checkPermissions(String[] neededPermissions) {
+        if (neededPermissions == null || neededPermissions.length == 0) {
+            return true;
+        }
+        boolean allGranted = true;
+        for (String neededPermission : neededPermissions) {
+            allGranted &= ContextCompat.checkSelfPermission(this, neededPermission) == PackageManager.PERMISSION_GRANTED;
+        }
+        return allGranted;
+    }
 
 }

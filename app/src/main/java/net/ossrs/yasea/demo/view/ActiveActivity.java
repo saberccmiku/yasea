@@ -37,7 +37,6 @@ import butterknife.BindView;
 import butterknife.OnClick;
 import io.objectbox.Box;
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -116,7 +115,7 @@ public class ActiveActivity extends BaseActivity {
                     Box<NetConfig> netConfigBox = IApplication.boxStore.boxFor(NetConfig.class);
                     netConfigBox.put(new NetConfig());
 
-                    startActivity(new Intent(ActiveActivity.this, RegisterAndRecognizeActivity.class));
+                    startActivity(new Intent(ActiveActivity.this, MainActivity.class));
                     ActiveActivity.this.finish();
                     break;
                 case "激活失败":

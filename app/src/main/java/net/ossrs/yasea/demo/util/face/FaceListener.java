@@ -20,4 +20,12 @@ public interface FaceListener {
      * @param requestId 请求码
      */
     void  onFaceFeatureInfoGet(@Nullable FaceFeature faceFeature, Integer requestId);
+
+    /**
+     * 请求人脸特征后的回调
+     *
+     * @param faceFeature    人脸特征数据
+     * @param requestId 请求码
+     */
+    void  onFaceFeatureInfoGet(byte[] nv21,@Nullable FaceFeature faceFeature, Integer requestId);
 }

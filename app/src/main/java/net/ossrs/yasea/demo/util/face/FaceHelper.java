@@ -1,8 +1,6 @@
 package net.ossrs.yasea.demo.util.face;
 
-import android.graphics.ImageFormat;
 import android.graphics.Rect;
-import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.util.Log;
 
@@ -15,8 +13,6 @@ import com.arcsoft.face.LivenessInfo;
 import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.util.TrackUtil;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -46,9 +42,10 @@ public class FaceHelper {
     private int currentTrackId = 0;
     private List<Integer> formerTrackIdList = new ArrayList<>();
     private List<Integer> currentTrackIdList = new ArrayList<>();
-    private List<FaceInfo> formerFaceInfoList = new ArrayList<>();
+    private List<Rect> formerFaceRectList = new ArrayList<>();
     private List<FacePreviewInfo> facePreviewInfoList = new ArrayList<>();
     private ConcurrentHashMap<Integer, String> nameMap = new ConcurrentHashMap<>();
+    private static final float SIMILARITY_RECT = 0.3f;
 
     private FaceHelper(Builder builder) {
         faceEngine = builder.faceEngine;
@@ -67,9 +64,9 @@ public class FaceHelper {
     }
 
     /**
-     * 请求获取人脸特征数据
+     * 请求获取人脸特征数据，需要传入FR的参数，以下参数同 AFR_FSDKEngine.AFR_FSDK_ExtractFRFeature
      *
-     * @param nv21     图像数据
+     * @param nv21     NV21格式的图像数据
      * @param faceInfo 人脸信息
      * @param width    图像宽度
      * @param height   图像高度
@@ -82,9 +79,7 @@ public class FaceHelper {
                 faceRecognizeRunnables.add(new FaceRecognizeRunnable(nv21, faceInfo, width, height, format, trackId));
                 executor.execute(faceRecognizeRunnables.poll());
             } else {
-                FaceFeature faceFeature = new FaceFeature();
-                faceFeature.setFeatureData(nv21);
-                faceListener.onFaceFeatureInfoGet(faceFeature, trackId);
+                faceListener.onFaceFeatureInfoGet(null, trackId);
             }
         }
     }
@@ -115,7 +110,6 @@ public class FaceHelper {
                 faceInfoList.clear();
                 long ftStartTime = System.currentTimeMillis();
                 int code = faceEngine.detectFaces(nv21, previewSize.width, previewSize.height, FaceEngine.CP_PAF_NV21, faceInfoList);
-
                 if (code != ErrorInfo.MOK) {
                     faceListener.onFail(new Exception("ft failed,code is " + code));
                 } else {
@@ -151,7 +145,7 @@ public class FaceHelper {
     }
 
     /**
-     * 人脸特征提取线程
+     * 人脸解析的线程
      */
     public class FaceRecognizeRunnable implements Runnable {
         private FaceInfo faceInfo;
@@ -177,18 +171,8 @@ public class FaceHelper {
         public void run() {
             frThreadRunning = true;
             if (faceListener != null && nv21Data != null) {
-                YuvImage image = new YuvImage(nv21Data, ImageFormat.NV21, width, height, null);            //ImageFormat.NV21  640 480
-                ByteArrayOutputStream outputSteam = new ByteArrayOutputStream();
-                image.compressToJpeg(new Rect(0, 0, width, height), 100, outputSteam); // 将NV21格式图片，以质量70压缩成Jpeg，并得到JPEG数据流
-                byte[] jpegData = outputSteam.toByteArray();                                                //从outputSteam得到byte数据
-                try {
-                    outputSteam.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                FaceFeature faceFeature = new FaceFeature(jpegData);
                 if (faceEngine != null) {
+                    FaceFeature faceFeature = new FaceFeature();
                     long frStartTime = System.currentTimeMillis();
                     int frCode;
                     synchronized (FaceHelper.this) {
@@ -198,11 +182,11 @@ public class FaceHelper {
 //                        Log.i(TAG, "run: fr costTime = " + (System.currentTimeMillis() - frStartTime) + "ms");
                         faceListener.onFaceFeatureInfoGet(faceFeature, trackId);
                     } else {
-                        faceListener.onFaceFeatureInfoGet(faceFeature, trackId);
+                        faceListener.onFaceFeatureInfoGet(null, trackId);
                         faceListener.onFail(new Exception("fr failed errorCode is " + frCode));
                     }
                 } else {
-                    faceListener.onFaceFeatureInfoGet(faceFeature, trackId);
+                    faceListener.onFaceFeatureInfoGet(null, trackId);
                     faceListener.onFail(new Exception("fr failed ,frEngine is null"));
                 }
                 if (faceRecognizeRunnables != null && faceRecognizeRunnables.size() > 0) {
@@ -235,9 +219,9 @@ public class FaceHelper {
             //前后都有人脸,对于每一个人脸框
             for (int i = 0; i < ftFaceList.size(); i++) {
                 //遍历上一次人脸框
-                for (int j = 0; j < formerFaceInfoList.size(); j++) {
+                for (int j = 0; j < formerFaceRectList.size(); j++) {
                     //若是同一张人脸
-                    if (TrackUtil.isSameFace(formerFaceInfoList.get(j), ftFaceList.get(i))) {
+                    if (TrackUtil.isSameFace(SIMILARITY_RECT, formerFaceRectList.get(j), ftFaceList.get(i).getRect())) {
                         //记录ID
                         currentTrackIdList.set(i, formerTrackIdList.get(j));
                         break;
@@ -252,9 +236,9 @@ public class FaceHelper {
             }
         }
         formerTrackIdList.clear();
-        formerFaceInfoList.clear();
+        formerFaceRectList.clear();
         for (int i = 0; i < ftFaceList.size(); i++) {
-            formerFaceInfoList.add(ftFaceList.get(i));
+            formerFaceRectList.add(new Rect(ftFaceList.get(i).getRect()));
             formerTrackIdList.add(currentTrackIdList.get(i));
         }
 

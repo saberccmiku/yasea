@@ -21,8 +21,7 @@
         <FrameLayout
             android:id="@+id/fl_video"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone">
+            android:layout_height="match_parent">
 
             <net.ossrs.yasea.SrsCameraView
                 android:id="@+id/glsurfaceview_camera"

@@ -5,19 +5,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-   <FrameLayout
-       android:layout_width="1000px"
-       android:layout_height="1000px">
-       <TextureView
-           android:id="@+id/texture_preview"
-           android:layout_width="match_parent"
-           android:layout_height="match_parent" />
+    <FrameLayout
+        android:layout_width="1000px"
+        android:layout_height="1000px">
+        <TextureView
+            android:id="@+id/texture_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
-       <net.ossrs.yasea.demo.widget.FaceRectView
-           android:id="@+id/face_rect_view"
-           android:layout_width="match_parent"
-           android:layout_height="match_parent" />
-   </FrameLayout>
+        <net.ossrs.yasea.demo.widget.FaceRectView
+            android:id="@+id/face_rect_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
 
     <Switch
         android:id="@+id/switch_liveness_detect"

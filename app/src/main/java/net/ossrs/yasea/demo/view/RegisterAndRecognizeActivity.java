@@ -61,6 +61,7 @@ import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class RegisterAndRecognizeActivity extends AppCompatActivity implements ViewTreeObserver.OnGlobalLayoutListener {
@@ -269,7 +270,12 @@ public class RegisterAndRecognizeActivity extends AppCompatActivity implements V
                     //活体检测未出结果，延迟100ms再执行该函数
                     else if (livenessMap.get(requestId) != null && livenessMap.get(requestId) == LivenessInfo.UNKNOWN) {
                         getFeatureDelayedDisposables.add(Observable.timer(WAIT_LIVENESS_INTERVAL, TimeUnit.MILLISECONDS)
-                                .subscribe(aLong -> onFaceFeatureInfoGet(faceFeature, requestId)));
+                                .subscribe(new Consumer<Long>() {
+                                    @Override
+                                    public void accept(Long aLong) {
+                                        onFaceFeatureInfoGet(faceFeature, requestId);
+                                    }
+                                }));
                     }
                     //活体检测失败
                     else {
@@ -281,6 +287,11 @@ public class RegisterAndRecognizeActivity extends AppCompatActivity implements V
                 else {
                     requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
                 }
+            }
+
+            @Override
+            public void onFaceFeatureInfoGet(byte[] nv21, @Nullable FaceFeature faceFeature, Integer requestId) {
+
             }
 
         };
@@ -478,9 +489,9 @@ public class RegisterAndRecognizeActivity extends AppCompatActivity implements V
                         }
                     }
                 })
-                .subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.computation()).observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<CompareResult>() {
+
                     @Override
                     public void onSubscribe(Disposable d) {
 

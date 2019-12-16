@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
-
 import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.util.DrawHelper;
 

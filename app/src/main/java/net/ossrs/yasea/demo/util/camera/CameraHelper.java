@@ -12,8 +12,6 @@ import android.view.TextureView;
 import android.view.View;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -64,9 +62,6 @@ public class CameraHelper implements Camera.PreviewCallback {
 
     public void start() {
         synchronized (this) {
-            if (mCamera != null) {
-                return;
-            }
             //相机数量为2则打开1,1则打开0,相机ID 1为前置，0为后置
             mCameraId = Camera.getNumberOfCameras() - 1;
             //若指定了相机ID且该相机存在，则打开指定的相机
@@ -166,12 +161,17 @@ public class CameraHelper implements Camera.PreviewCallback {
             if (mCamera == null) {
                 return;
             }
-            mCamera.setPreviewCallback(null);
-            mCamera.stopPreview();
-            mCamera.release();
-            mCamera = null;
-            if (cameraListener != null) {
-                cameraListener.onCameraClosed();
+            try {
+                mCamera.setPreviewCallback(null);
+                mCamera.setPreviewDisplay(null);
+                mCamera.stopPreview();
+                mCamera.release();
+                mCamera = null;
+                if (cameraListener != null) {
+                    cameraListener.onCameraClosed();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -183,43 +183,21 @@ public class CameraHelper implements Camera.PreviewCallback {
     }
 
     public void release() {
-        synchronized (this) {
-            stop();
-            previewDisplayView = null;
-            specificCameraId = null;
-            cameraListener = null;
-            previewViewSize = null;
-            specificPreviewSize = null;
-            previewSize = null;
-        }
+        stop();
+        previewDisplayView = null;
+        specificCameraId = null;
+        cameraListener = null;
+        previewViewSize = null;
+        specificPreviewSize = null;
+        previewSize = null;
     }
 
     private Camera.Size getBestSupportedSize(List<Camera.Size> sizes, Point previewViewSize) {
-        if (sizes == null || sizes.size() == 0) {
+        if (sizes == null || sizes.size() == 0 || previewViewSize == null) {
             return mCamera.getParameters().getPreviewSize();
         }
-        Camera.Size[] tempSizes = sizes.toArray(new Camera.Size[0]);
-        Arrays.sort(tempSizes, new Comparator<Camera.Size>() {
-            @Override
-            public int compare(Camera.Size o1, Camera.Size o2) {
-                if (o1.width > o2.width) {
-                    return -1;
-                } else if (o1.width == o2.width) {
-                    return o1.height > o2.height ? -1 : 1;
-                } else {
-                    return 1;
-                }
-            }
-        });
-        sizes = Arrays.asList(tempSizes);
-
         Camera.Size bestSize = sizes.get(0);
-        float previewViewRatio;
-        if (previewViewSize != null) {
-            previewViewRatio = (float) previewViewSize.x / (float) previewViewSize.y;
-        } else {
-            previewViewRatio = (float) bestSize.width / (float) bestSize.height;
-        }
+        float previewViewRatio = (float) previewViewSize.x / (float) previewViewSize.y;
 
         if (previewViewRatio > 1) {
             previewViewRatio = 1 / previewViewRatio;
@@ -268,14 +246,7 @@ public class CameraHelper implements Camera.PreviewCallback {
     private TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
-//            start();
-            if (mCamera != null) {
-                try {
-                    mCamera.setPreviewTexture(surfaceTexture);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            start();
         }
 
         @Override
@@ -297,14 +268,7 @@ public class CameraHelper implements Camera.PreviewCallback {
     private SurfaceHolder.Callback surfaceCallback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
-//            start();
-            if (mCamera != null) {
-                try {
-                    mCamera.setPreviewDisplay(holder);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            start();
         }
 
         @Override
