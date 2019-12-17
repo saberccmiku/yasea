@@ -50,8 +50,8 @@ public class ActiveActivity extends BaseActivity {
     private boolean isActiveSuccess;
     private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
     private static final String[] NEEDED_PERMISSIONS = new String[]{
-            Manifest.permission.READ_PHONE_STATE,
-            Manifest.permission.CAMERA
+            Manifest.permission.CAMERA,
+            Manifest.permission.READ_PHONE_STATE
     };
 
     @BindView(R.id.rv_active)

@@ -21,7 +21,8 @@
         <FrameLayout
             android:id="@+id/fl_video"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+        >
 
             <net.ossrs.yasea.SrsCameraView
                 android:id="@+id/glsurfaceview_camera"
@@ -61,39 +62,34 @@
             android:weightSum="5">
 
             <Button
-                android:id="@+id/pause"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="暂停" />
+                android:text="Pause"
+                android:id="@+id/pause" />
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="publish"
+                android:id="@+id/publish" />
 
             <Button
-                android:id="@+id/publish"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="发布" />
+                android:text="switch"
+                android:id="@+id/swCam" />
 
             <Button
-                android:id="@+id/swCam"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="切换" />
+                android:text="record"
+                android:id="@+id/record" />
 
             <Button
-                android:id="@+id/record"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="录制" />
-
-            <Button
+                android:text="soft encoder"
                 android:id="@+id/swEnc"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="编码" />
+                android:visibility="gone"/>
 
         </LinearLayout>
 
