@@ -337,11 +337,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 760,
                 760, 0
                 , mPublisher.getCameraId(), true, true, false);
-//        drawHelper = new DrawHelper(this.previewSize.width, this.previewSize.height, mCameraView.getmPreviewWidth(), mCameraView.getmPreviewHeight(), 0
-//                , mPublisher.getCameraId(), false, false, false);
-
-//        drawHelper = new DrawHelper(previewSize.width, previewSize.height, mCameraView.getWidth(), mCameraView.getHeight(), 0
-//                , mPublisher.getCameraId(), false);
 
     }
 
@@ -641,11 +636,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     liveness == null ? LivenessInfo.UNKNOWN : liveness,
                     name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
         }
-//        for (int i = 0; i < facePreviewInfoList.size(); i++) {
-//            String name = faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
-//            drawInfoList.add(new DrawInfo(facePreviewInfoList.get(i).getFaceInfo().getRect(), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE, LivenessInfo.UNKNOWN,
-//                    name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
-//        }
         drawHelper.draw(faceRectView, drawInfoList);
     }
 
