@@ -25,7 +25,7 @@
         android:name=".application.IApplication"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".view.SplashActivity"
+            android:name=".view.ActiveActivity"
             android:configChanges="orientation|screenSize"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -39,7 +39,7 @@
         <activity android:name=".view.FloatActivity" />
         <activity android:name=".view.RegisterAndRecognizeActivity" />
         <activity android:name=".view.PreviewActivity" />
-        <activity android:name=".view.ActiveActivity" />
+        <activity android:name=".view.SplashActivity" />
     </application>
 
 </manifest>

@@ -313,11 +313,17 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         activeEngine();
         initEngine();
 
-        previewSize = mCameraView.getCamera().getParameters().getPreviewSize();
+        previewSize = mPublisher.getCamera().getParameters().getPreviewSize();
         btnPublish.setText("publish");
         btnPublish.callOnClick();
-        previewSize.width = mPublisher.getEncoder().getOutputWidth();
-        previewSize.height = mPublisher.getEncoder().getOutputHeight();
+        System.out.println("----------getOutputWidth--------------");
+        System.out.println(mPublisher.getEncoder().getOutputWidth());
+        System.out.println(mPublisher.getEncoder().getOutputHeight());
+        System.out.println("----------getOutputWidth--------------");
+        previewSize.width = 540;
+        previewSize.height = 960;
+//        previewSize.width = 540;
+//        previewSize.height = 960;
         faceHelper = new FaceHelper.Builder()
                 .faceEngine(faceEngine)
                 .frThreadNum(MAX_DETECT_NUM)
@@ -326,13 +332,16 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 .build();
         ViewGroup.LayoutParams lp = mCameraView.getLayoutParams();
 
-        drawHelper = new DrawHelper(mCameraView.getmPreviewWidth()+mCameraView.getmPreviewWidth()/4+200,
-                mCameraView.getmPreviewHeight()-mCameraView.getmPreviewHeight()/6+150,
-                mPublisher.getPreviewWidth()+mPublisher.getPreviewWidth()/2,
-                mPublisher.getPreviewHeight()+mPublisher.getPreviewHeight()/3, 0
-                , mPublisher.getCameraId(), false, false, false);
+        drawHelper = new DrawHelper(620,
+                580,
+                760,
+                760, 0
+                , mPublisher.getCameraId(), true, true, false);
 //        drawHelper = new DrawHelper(this.previewSize.width, this.previewSize.height, mCameraView.getmPreviewWidth(), mCameraView.getmPreviewHeight(), 0
 //                , mPublisher.getCameraId(), false, false, false);
+
+//        drawHelper = new DrawHelper(previewSize.width, previewSize.height, mCameraView.getWidth(), mCameraView.getHeight(), 0
+//                , mPublisher.getCameraId(), false);
 
     }
 
@@ -632,6 +641,11 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     liveness == null ? LivenessInfo.UNKNOWN : liveness,
                     name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
         }
+//        for (int i = 0; i < facePreviewInfoList.size(); i++) {
+//            String name = faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
+//            drawInfoList.add(new DrawInfo(facePreviewInfoList.get(i).getFaceInfo().getRect(), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE, LivenessInfo.UNKNOWN,
+//                    name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
+//        }
         drawHelper.draw(faceRectView, drawInfoList);
     }
 
