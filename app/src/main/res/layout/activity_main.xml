@@ -22,7 +22,7 @@
             android:id="@+id/fl_video"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-        >
+            android:visibility="gone">
 
             <net.ossrs.yasea.SrsCameraView
                 android:id="@+id/glsurfaceview_camera"
@@ -55,41 +55,44 @@
             android:textColor="@android:color/holo_red_light" />
 
         <LinearLayout
+            android:id="@+id/ll_video_btn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:orientation="horizontal"
-            android:weightSum="5">
+            android:weightSum="5"
+            android:visibility="gone">
 
             <Button
+                android:id="@+id/pause"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pause"
-                android:id="@+id/pause" />
-            <Button
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="publish"
-                android:id="@+id/publish" />
+                android:text="Pause" />
 
             <Button
+                android:id="@+id/publish"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="switch"
-                android:id="@+id/swCam" />
+                android:text="publish" />
 
             <Button
+                android:id="@+id/swCam"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="record"
-                android:id="@+id/record" />
+                android:text="switch" />
 
             <Button
+                android:id="@+id/record"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="record" />
+
+            <Button
+                android:id="@+id/swEnc"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="soft encoder"
-                android:id="@+id/swEnc"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
         </LinearLayout>
 
@@ -179,6 +182,20 @@
             fab:fab_colorNormal="@color/white"
             fab:fab_colorPressed="@color/white_pressed"
             fab:fab_title="上线/下线" />
+
+        <com.custom.view.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_register"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            fab:fab_colorNormal="@color/white"
+            fab:fab_colorPressed="@color/white_pressed"
+            fab:fab_title="注册" />
+
     </com.custom.view.floatingactionbutton.FloatingActionsMenu>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycler_view_person"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
 </RelativeLayout>

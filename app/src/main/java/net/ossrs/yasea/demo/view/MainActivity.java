@@ -1,6 +1,5 @@
 package net.ossrs.yasea.demo.view;
 
-import android.Manifest;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.hardware.Camera;
@@ -8,6 +7,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.RecyclerView;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,6 +43,7 @@ import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
 import net.ossrs.yasea.demo.faceserver.CompareResult;
+import net.ossrs.yasea.demo.faceserver.FaceServer;
 import net.ossrs.yasea.demo.net.ApiConstants;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.DrawHelper;
@@ -49,6 +51,7 @@ import net.ossrs.yasea.demo.util.face.FaceHelper;
 import net.ossrs.yasea.demo.util.face.FaceListener;
 import net.ossrs.yasea.demo.util.face.RequestFeatureStatus;
 import net.ossrs.yasea.demo.widget.FaceRectView;
+import net.ossrs.yasea.demo.widget.ShowFaceInfoAdapter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -59,6 +62,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -73,7 +77,6 @@ import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -98,7 +101,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
     private static final float SIMILAR_THRESHOLD = 0.8F;
-    private boolean isOnline = true;
+    private boolean isOnline = false;
 
     private FaceEngine faceEngine;
     private List<FaceInfo> faceInfoList;
@@ -108,6 +111,22 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private List<CompareResult> compareResultList;
     private SurfaceView surfaceView;
     private CompositeDisposable getFeatureDelayedDisposables = new CompositeDisposable();
+
+    /**
+     * 注册人脸状态码，准备注册
+     */
+    private static final int REGISTER_STATUS_READY = 0;
+    /**
+     * 注册人脸状态码，注册中
+     */
+    private static final int REGISTER_STATUS_PROCESSING = 1;
+    /**
+     * 注册人脸状态码，注册结束（无论成功失败）
+     */
+    private static final int REGISTER_STATUS_DONE = 2;
+
+    private int registerStatus = REGISTER_STATUS_DONE;
+
     /**
      * 当FR成功，活体未成功时，FR等待活体的时间
      */
@@ -124,14 +143,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private DrawHelper drawHelper;
     private ConcurrentHashMap<Integer, Integer> requestFeatureStatusMap = new ConcurrentHashMap<>();
     private Camera.Size previewSize;
-
-    /**
-     * 所需的所有权限信息
-     */
-    private static final String[] NEEDED_PERMISSIONS = new String[]{
-            Manifest.permission.CAMERA,
-            Manifest.permission.READ_PHONE_STATE
-    };
+    private ShowFaceInfoAdapter adapter;
 
 
     @Override
@@ -254,7 +266,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         btnPause = (Button) findViewById(R.id.pause);
         btnPause.setEnabled(false);
         mCameraView = findViewById(R.id.glsurfaceview_camera);
-
+        flVideo.setVisibility(View.GONE);
+        llVideoBtn.setVisibility(View.GONE);
         mPublisher = new SrsPublisher(mCameraView);
         //     mPublisher.setFaceHandler(myHandler);
         //编码状态回调
@@ -274,11 +287,15 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         mPublisher.startCamera();
         //mPublisher.switchToSoftEncoder();//选择软编码
         mPublisher.switchToHardEncoder();//选择硬编码
-        //recyclerView=findViewById(R.id.recyclerView);
+        //本地人脸库初始化
+        FaceServer.getInstance().init(this);
         faceRectView = findViewById(R.id.face_rect_view);
         faceInfoList = new ArrayList<>();
         faceRegisterInfoList = new ArrayList<>();
+        RecyclerView recyclerShowFaceInfo = findViewById(R.id.recycler_view_person);
         compareResultList = new ArrayList<>();
+        adapter = new ShowFaceInfoAdapter(compareResultList, this);
+        recyclerShowFaceInfo.setAdapter(adapter);
         mCameraView.setCameraCallbacksHandler(new SrsCameraView.CameraCallbacksHandler() {
 
             @Override
@@ -290,8 +307,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
 
         });
-
-        //recyclerView=findViewById(R.id.recyclerView);
         faceRectView = findViewById(R.id.face_rect_view);
         faceInfoList = new ArrayList<>();
         faceRegisterInfoList = new ArrayList<>();
@@ -314,16 +329,10 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         initEngine();
 
         previewSize = mPublisher.getCamera().getParameters().getPreviewSize();
-        btnPublish.setText("publish");
-        btnPublish.callOnClick();
-        System.out.println("----------getOutputWidth--------------");
-        System.out.println(mPublisher.getEncoder().getOutputWidth());
-        System.out.println(mPublisher.getEncoder().getOutputHeight());
-        System.out.println("----------getOutputWidth--------------");
-        previewSize.width = 540;
-        previewSize.height = 960;
-//        previewSize.width = 540;
-//        previewSize.height = 960;
+        btnPublish.setText("stop");
+        //btnPublish.callOnClick();
+        previewSize.width = mPublisher.getEncoder().getOutputWidth();
+        previewSize.height = mPublisher.getEncoder().getOutputHeight();
         faceHelper = new FaceHelper.Builder()
                 .faceEngine(faceEngine)
                 .frThreadNum(MAX_DETECT_NUM)
@@ -332,13 +341,15 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 .build();
         ViewGroup.LayoutParams lp = mCameraView.getLayoutParams();
 
-        drawHelper = new DrawHelper(620,
-                580,
-                760,
-                760, 0
-                , mPublisher.getCameraId(), true, true, false);
+        drawHelper = new DrawHelper(620, 580,
+                760, 760,
+                0, mPublisher.getCameraId(),
+                true, true, false);
 
     }
+
+    @BindView(R.id.ll_video_btn)
+    LinearLayout llVideoBtn;
 
     @BindView(R.id.fl_video)
     FrameLayout flVideo;
@@ -352,7 +363,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         if (isOnline) {
             mPublisher.startPublish(rtmpUrl);
             mPublisher.startCamera();
-
             if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
                 Toast.makeText(getApplicationContext(), "Use hard encoder", Toast.LENGTH_SHORT).show();
             } else {
@@ -362,6 +372,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             btnSwitchEncoder.setEnabled(false);
             btnPause.setEnabled(true);
             flVideo.setVisibility(View.VISIBLE);
+            llVideoBtn.setVisibility(View.VISIBLE);
             tvOnline.setText("工作中");
         } else {
             mPublisher.stopPublish();
@@ -377,79 +388,74 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     }
 
+    /**
+     * 将准备注册的状态置为{@link #REGISTER_STATUS_READY}
+     *
+     * @param view 注册按钮
+     */
+    @OnClick(R.id.fab_register)
+    public void register(View view) {
+        if (registerStatus == REGISTER_STATUS_DONE) {
+            registerStatus = REGISTER_STATUS_READY;
+        }
+    }
+
     private void initListener() {
-        btnPublish.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (btnPublish.getText().toString().contentEquals("publish")) {
-                    mPublisher.startPublish(rtmpUrl);
-                    mPublisher.startCamera();
+        btnPublish.setOnClickListener(v -> {
+            if (btnPublish.getText().toString().contentEquals("publish")) {
+                mPublisher.startPublish(rtmpUrl);
+                mPublisher.startCamera();
 
-                    if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
-                        Toast.makeText(getApplicationContext(), "Use hard encoder", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getApplicationContext(), "Use soft encoder", Toast.LENGTH_SHORT).show();
-                    }
-                    btnPublish.setText("stop");
-                    btnSwitchEncoder.setEnabled(false);
-                    btnPause.setEnabled(true);
-                } else if (btnPublish.getText().toString().contentEquals("stop")) {
-                    mPublisher.stopPublish();
-                    mPublisher.stopRecord();
-                    btnPublish.setText("publish");
-                    btnRecord.setText("record");
-                    btnSwitchEncoder.setEnabled(true);
-                    btnPause.setEnabled(false);
-                }
-            }
-        });
-        btnPause.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (btnPause.getText().toString().equals("Pause")) {
-                    mPublisher.pausePublish();
-                    btnPause.setText("resume");
+                if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
+                    Toast.makeText(getApplicationContext(), "Use hard encoder", Toast.LENGTH_SHORT).show();
                 } else {
-                    mPublisher.resumePublish();
-                    btnPause.setText("Pause");
+                    Toast.makeText(getApplicationContext(), "Use soft encoder", Toast.LENGTH_SHORT).show();
                 }
+                btnPublish.setText("stop");
+                btnSwitchEncoder.setEnabled(false);
+                btnPause.setEnabled(true);
+            } else if (btnPublish.getText().toString().contentEquals("stop")) {
+                mPublisher.stopPublish();
+                mPublisher.stopRecord();
+                btnPublish.setText("publish");
+                btnRecord.setText("record");
+                btnSwitchEncoder.setEnabled(true);
+                btnPause.setEnabled(false);
+            }
+        });
+        btnPause.setOnClickListener(view -> {
+            if (btnPause.getText().toString().equals("Pause")) {
+                mPublisher.pausePublish();
+                btnPause.setText("resume");
+            } else {
+                mPublisher.resumePublish();
+                btnPause.setText("Pause");
             }
         });
 
-        btnSwitchCamera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mPublisher.switchCameraFace((mPublisher.getCameraId() + 1) % Camera.getNumberOfCameras());
-            }
-        });
+        btnSwitchCamera.setOnClickListener(v -> mPublisher.switchCameraFace((mPublisher.getCameraId() + 1) % Camera.getNumberOfCameras()));
 
-        btnRecord.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (btnRecord.getText().toString().contentEquals("record")) {
-                    if (mPublisher.startRecord(recPath)) {
-                        btnRecord.setText("pause");
-                    }
-                } else if (btnRecord.getText().toString().contentEquals("pause")) {
-                    mPublisher.pauseRecord();
-                    btnRecord.setText("resume");
-                } else if (btnRecord.getText().toString().contentEquals("resume")) {
-                    mPublisher.resumeRecord();
+        btnRecord.setOnClickListener(v -> {
+            if (btnRecord.getText().toString().contentEquals("record")) {
+                if (mPublisher.startRecord(recPath)) {
                     btnRecord.setText("pause");
                 }
+            } else if (btnRecord.getText().toString().contentEquals("pause")) {
+                mPublisher.pauseRecord();
+                btnRecord.setText("resume");
+            } else if (btnRecord.getText().toString().contentEquals("resume")) {
+                mPublisher.resumeRecord();
+                btnRecord.setText("pause");
             }
         });
 
-        btnSwitchEncoder.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
-                    mPublisher.switchToSoftEncoder();
-                    btnSwitchEncoder.setText("hard encoder");
-                } else if (btnSwitchEncoder.getText().toString().contentEquals("hard encoder")) {
-                    mPublisher.switchToHardEncoder();
-                    btnSwitchEncoder.setText("soft encoder");
-                }
+        btnSwitchEncoder.setOnClickListener(v -> {
+            if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
+                mPublisher.switchToSoftEncoder();
+                btnSwitchEncoder.setText("hard encoder");
+            } else if (btnSwitchEncoder.getText().toString().contentEquals("hard encoder")) {
+                mPublisher.switchToHardEncoder();
+                btnSwitchEncoder.setText("soft encoder");
             }
         });
     }
@@ -642,19 +648,18 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     private final MyHandler myHandler = new MyHandler(this);
 
-    private class MyHandler extends Handler {
-        private final WeakReference<MainActivity> mActivity;
+    private static class MyHandler extends Handler {
+        private final WeakReference<MainActivity> weakReference;
+        private MainActivity mainActivity;
 
         public MyHandler(MainActivity activity) {
-            mActivity = new WeakReference<MainActivity>(activity);
+            weakReference = new WeakReference<>(activity);
+            mainActivity = weakReference.get();
         }
 
         @Override
         public void handleMessage(Message msg) {
-
-
-            MainActivity activity = mActivity.get();
-            if (null != activity) {
+            if (null != mainActivity) {
                 switch (msg.what) {
                     case 1:
                         try {
@@ -673,33 +678,70 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }*/
-                            if (faceRectView != null) {
-                                faceRectView.clearFaceInfo();
+                            if (mainActivity.faceRectView != null) {
+                                mainActivity.faceRectView.clearFaceInfo();
                             }
-                            List<FacePreviewInfo> facePreviewInfoList = faceHelper.onPreviewFrame(data);
-                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && faceRectView != null && drawHelper != null) {
-                                drawPreviewInfo(facePreviewInfoList);
-
+                            List<FacePreviewInfo> facePreviewInfoList = mainActivity.faceHelper.onPreviewFrame(data);
+                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && mainActivity.faceRectView != null && mainActivity.drawHelper != null) {
+                                mainActivity.drawPreviewInfo(facePreviewInfoList);
+                                mainActivity.clearLeftFace(facePreviewInfoList);
                             } else {
-                                if (compareResultList.size() > 0) {
-                                    compareResultList.clear();
-                                    //mAdapter.notifyDataSetChanged();
+                                if (mainActivity.compareResultList.size() > 0) {
+                                    mainActivity.compareResultList.clear();
+                                    mainActivity.adapter.notifyDataSetChanged();
                                 }
 
                             }
-                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && previewSize != null) {
+
+                            //注册
+                            if (mainActivity.registerStatus == REGISTER_STATUS_READY && facePreviewInfoList != null && facePreviewInfoList.size() > 0) {
+                                mainActivity.registerStatus = REGISTER_STATUS_PROCESSING;
+                                Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+                                    boolean success = FaceServer.getInstance().register(mainActivity, data.clone(), mainActivity.previewSize.width, mainActivity.previewSize.height, "registered " + mainActivity.faceHelper.getCurrentTrackId());
+                                    emitter.onNext(success);
+                                })
+                                        .subscribeOn(Schedulers.computation())
+                                        .observeOn(AndroidSchedulers.mainThread())
+                                        .subscribe(new Observer<Boolean>() {
+                                            @Override
+                                            public void onSubscribe(Disposable d) {
+
+                                            }
+
+                                            @Override
+                                            public void onNext(Boolean success) {
+                                                String result = success ? "register success!" : "register failed!";
+                                                Toast.makeText(mainActivity, result, Toast.LENGTH_SHORT).show();
+                                                mainActivity.registerStatus = REGISTER_STATUS_DONE;
+                                            }
+
+                                            @Override
+                                            public void onError(Throwable e) {
+                                                Toast.makeText(mainActivity, "register failed!", Toast.LENGTH_SHORT).show();
+                                                mainActivity.registerStatus = REGISTER_STATUS_DONE;
+                                            }
+
+                                            @Override
+                                            public void onComplete() {
+
+                                            }
+                                        });
+                            }
+
+                            if (facePreviewInfoList != null && facePreviewInfoList.size() > 0 && mainActivity.previewSize != null) {
                                 for (int i = 0; i < facePreviewInfoList.size(); i++) {
-                                    if (livenessDetect) {
-                                        livenessMap.put(facePreviewInfoList.get(i).getTrackId(), facePreviewInfoList.get(i).getLivenessInfo().getLiveness());
+                                    if (mainActivity.livenessDetect) {
+                                        mainActivity.livenessMap.put(facePreviewInfoList.get(i).getTrackId(), facePreviewInfoList.get(i).getLivenessInfo().getLiveness());
                                     }
                                     /**
                                      * 对于每个人脸，若状态为空或者为失败，则请求FR（可根据需要添加其他判断以限制FR次数），
                                      * FR回传的人脸特征结果在{@link FaceListener#onFaceFeatureInfoGet(FaceFeature, Integer)}中回传
                                      */
-                                    if (requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == null
-                                            || requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == RequestFeatureStatus.FAILED) {
-                                        requestFeatureStatusMap.put(facePreviewInfoList.get(i).getTrackId(), RequestFeatureStatus.SEARCHING);
-                                        faceHelper.requestFaceFeature(data, facePreviewInfoList.get(i).getFaceInfo(), previewSize.width, previewSize.height, FaceEngine.CP_PAF_NV21, facePreviewInfoList.get(i).getTrackId());
+                                    if (mainActivity.requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == null
+                                            || mainActivity.requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == RequestFeatureStatus.FAILED) {
+                                        mainActivity.requestFeatureStatusMap.put(facePreviewInfoList.get(i).getTrackId(), RequestFeatureStatus.SEARCHING);
+                                        mainActivity.faceHelper.requestFaceFeature(data, facePreviewInfoList.get(i).getFaceInfo(),
+                                                mainActivity.previewSize.width, mainActivity.previewSize.height, FaceEngine.CP_PAF_NV21, facePreviewInfoList.get(i).getTrackId());
 //                            Log.i(TAG, "onPreview: fr start = " + System.currentTimeMillis() + " trackId = " + facePreviewInfoList.get(i).getTrackId());
                                     }
                                 }
@@ -735,26 +777,59 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         }
     }
 
+    /**
+     * 删除已经离开的人脸
+     *
+     * @param facePreviewInfoList 人脸和trackId列表
+     */
+    private void clearLeftFace(List<FacePreviewInfo> facePreviewInfoList) {
+        Set<Integer> keySet = requestFeatureStatusMap.keySet();
+        if (compareResultList != null) {
+            for (int i = compareResultList.size() - 1; i >= 0; i--) {
+                if (!keySet.contains(compareResultList.get(i).getTrackId())) {
+                    compareResultList.remove(i);
+                    adapter.notifyItemRemoved(i);
+                }
+            }
+        }
+        if (facePreviewInfoList == null || facePreviewInfoList.size() == 0) {
+            requestFeatureStatusMap.clear();
+            livenessMap.clear();
+            return;
+        }
 
-    private void searchFace(final byte[] nv21, final FaceFeature frFace, final Integer requestId) {
+        for (Integer integer : keySet) {
+            boolean contained = false;
+            for (FacePreviewInfo facePreviewInfo : facePreviewInfoList) {
+                if (facePreviewInfo.getTrackId() == integer) {
+                    contained = true;
+                    break;
+                }
+            }
+            if (!contained) {
+                requestFeatureStatusMap.remove(integer);
+                livenessMap.remove(integer);
+            }
+        }
 
+    }
+
+
+    private void searchFace(final FaceFeature frFace, final Integer requestId) {
         Observable
-                .create(new ObservableOnSubscribe<CompareResult>() {
-                    @Override
-                    public void subscribe(ObservableEmitter<CompareResult> emitter) {
+                .create((ObservableOnSubscribe<CompareResult>) emitter -> {
 //                        Log.i(TAG, "subscribe: fr search start = " + System.currentTimeMillis() + " trackId = " + requestId);
-                        CompareResult compareResult = getTopOfFaceLib(nv21, frFace);
+                    CompareResult compareResult = FaceServer.getInstance().getTopOfFaceLib(frFace);
 //                        Log.i(TAG, "subscribe: fr search end = " + System.currentTimeMillis() + " trackId = " + requestId);
-                        if (compareResult == null) {
-                            emitter.onError(null);
-                        } else {
-                            emitter.onNext(compareResult);
-                        }
+                    if (compareResult == null) {
+                        emitter.onError(null);
+                    } else {
+                        emitter.onNext(compareResult);
                     }
                 })
-                .subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.computation())                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<CompareResult>() {
+
                     @Override
                     public void onSubscribe(Disposable d) {
 
@@ -786,17 +861,16 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                                 //对于多人脸搜索，假如最大显示数量为 MAX_DETECT_NUM 且有新的人脸进入，则以队列的形式移除
                                 if (compareResultList.size() >= MAX_DETECT_NUM) {
                                     compareResultList.remove(0);
-                                    // adapter.notifyItemRemoved(0);
+                                    adapter.notifyItemRemoved(0);
                                 }
                                 //添加显示人员时，保存其trackId
                                 compareResult.setTrackId(requestId);
                                 compareResultList.add(compareResult);
-
+                                adapter.notifyItemInserted(compareResultList.size() - 1);
                             }
-                            //mAdapter.notifyDataSetChanged();
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.SUCCEED);
                             faceHelper.addName(requestId, compareResult.getUserName());
-                            // mAdapter.notifyDataSetChanged();
+
                         } else {
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
                             faceHelper.addName(requestId, "VISITOR " + requestId);
@@ -1086,21 +1160,18 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
                 //不做活体检测的情况，直接搜索
                 if (!livenessDetect) {
-                    searchFace(nv21, faceFeature, requestId);
+                    //searchFace(nv21, faceFeature, requestId);
+                    searchFace(new FaceFeature(nv21), requestId);
                 }
                 //活体检测通过，搜索特征
                 else if (livenessMap.get(requestId) != null && livenessMap.get(requestId) == LivenessInfo.ALIVE) {
-                    searchFace(nv21, faceFeature, requestId);
+                    //searchFace(nv21, faceFeature, requestId);
+                    searchFace(new FaceFeature(nv21), requestId);
                 }
                 //活体检测未出结果，延迟100ms再执行该函数
                 else if (livenessMap.get(requestId) != null && livenessMap.get(requestId) == LivenessInfo.UNKNOWN) {
                     getFeatureDelayedDisposables.add(Observable.timer(WAIT_LIVENESS_INTERVAL, TimeUnit.MILLISECONDS)
-                            .subscribe(new Consumer<Long>() {
-                                @Override
-                                public void accept(Long aLong) {
-                                    onFaceFeatureInfoGet(nv21, faceFeature, requestId);
-                                }
-                            }));
+                            .subscribe(aLong -> onFaceFeatureInfoGet(nv21, faceFeature, requestId)));
                 }
                 //活体检测失败
                 else {
