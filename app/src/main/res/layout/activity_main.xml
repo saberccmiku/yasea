@@ -96,6 +96,13 @@
 
         </LinearLayout>
 
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recycler_view_person"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/pink"/>
+
+
 
     </RelativeLayout>
 
@@ -192,10 +199,5 @@
             fab:fab_title="注册" />
 
     </com.custom.view.floatingactionbutton.FloatingActionsMenu>
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/recycler_view_person"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
 
 </RelativeLayout>

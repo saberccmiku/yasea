@@ -37,7 +37,6 @@
         <activity android:name=".view.MainActivity" />
         <activity android:name=".util.permission.PermissionActivity" />
         <activity android:name=".view.FloatActivity" />
-        <activity android:name=".view.RegisterAndRecognizeActivity" />
         <activity android:name=".view.PreviewActivity" />
         <activity android:name=".view.SplashActivity" />
     </application>
