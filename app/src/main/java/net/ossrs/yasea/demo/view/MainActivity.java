@@ -321,14 +321,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         faceRectView = findViewById(R.id.face_rect_view);
         faceInfoList = new ArrayList<>();
         faceRegisterInfoList = new ArrayList<>();
-        RecyclerView recyclerShowFaceInfo = findViewById(R.id.recycler_view_person);
-        compareResultList = new ArrayList<>();
-        adapter = new ShowFaceInfoAdapter(compareResultList, this);
-        recyclerShowFaceInfo.setAdapter(adapter);
-        DisplayMetrics dm = getResources().getDisplayMetrics();
-        int spanCount = (int) (dm.widthPixels / (getResources().getDisplayMetrics().density * 100 + 0.5f));
-        recyclerShowFaceInfo.setLayoutManager(new GridLayoutManager(this, spanCount));
-        recyclerShowFaceInfo.setItemAnimator(new DefaultItemAnimator());
         mCameraView.setCameraCallbacksHandler(new SrsCameraView.CameraCallbacksHandler() {
 
             @Override
@@ -344,6 +336,14 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         faceInfoList = new ArrayList<>();
         faceRegisterInfoList = new ArrayList<>();
         compareResultList = new ArrayList<>();
+        RecyclerView recyclerShowFaceInfo = findViewById(R.id.recycler_view_person);
+        adapter = new ShowFaceInfoAdapter(compareResultList, this);
+        recyclerShowFaceInfo.setAdapter(adapter);
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        int spanCount = (int) (dm.widthPixels / (getResources().getDisplayMetrics().density * 100 + 0.5f));
+        recyclerShowFaceInfo.setLayoutManager(new GridLayoutManager(this, spanCount));
+        recyclerShowFaceInfo.setItemAnimator(new DefaultItemAnimator());
+
         mCameraView.setCameraCallbacksHandler(new SrsCameraView.CameraCallbacksHandler() {
 
             @Override
@@ -372,10 +372,10 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 .previewSize(previewSize)
                 .faceListener(faceListener)
                 .build();
-        drawHelper = new DrawHelper(540, 600,
-                840, 1020,
+        drawHelper = new DrawHelper(580, 600,
+                900, 1020,
                 0, mPublisher.getCameraId(),
-                true, true, false);
+                false, false, false);
 
     }
 

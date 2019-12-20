@@ -38,14 +38,17 @@ public class ShowFaceInfoAdapter extends RecyclerView.Adapter<ShowFaceInfoAdapte
 
     @Override
     public void onBindViewHolder(@NonNull CompareResultHolder holder, int position) {
+        System.out.println(compareResultList);
         if (compareResultList == null) {
             return;
         }
         File imgFile = new File(FaceServer.ROOT_PATH + File.separator + FaceServer.SAVE_IMG_DIR + File.separator + compareResultList.get(position).getUserName() + FaceServer.IMG_SUFFIX);
+        System.out.println(imgFile.getAbsolutePath());
         Glide.with(holder.imageView)
                 .load(imgFile)
                 .into(holder.imageView);
         holder.textView.setText(compareResultList.get(position).getUserName());
+        System.out.println(compareResultList);
     }
 
     @Override
