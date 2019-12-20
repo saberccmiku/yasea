@@ -7,9 +7,12 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -19,6 +22,7 @@ import android.widget.Toast;
 
 import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
+import com.github.faucamp.simplertmp.io.RtmpConnection;
 
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.adapter.CommonRecyclerAdapter;
@@ -27,6 +31,7 @@ import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.NetConfig;
+import net.ossrs.yasea.demo.net.ApiConstants;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
 
@@ -84,13 +89,31 @@ public class ActiveActivity extends BaseActivity {
         adapter = new CommonRecyclerAdapter<Config>(this, R.layout.item_config_content, configList) {
             @Override
             public void convertView(CommonRecyclerViewHolder holder, Config config) {
-                if (config.isTitle()) {
+                if (TextUtils.isEmpty(config.getTitle())) {
                     LinearLayout llItemConfig = holder.getView(R.id.ll_item_config);
                     llItemConfig.setBackground(null);
                     holder.getView(R.id.et_input).setVisibility(View.GONE);
                 }
                 holder.setText(R.id.tv_label, config.getLabel());
                 holder.setEditText(R.id.et_input, config.getInput());
+                //为EditText设置监听事件，保存修改后的属性值
+                EditText editText = holder.getView(R.id.et_input);
+                editText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        config.setInput(s.toString());
+                    }
+                });
             }
         };
         rvActive.setAdapter(adapter);
@@ -138,28 +161,47 @@ public class ActiveActivity extends BaseActivity {
                 activeEngine(null);
 
             } else {
-                ivStatus.setBackgroundResource(R.drawable.ic_failed);
-                tvStatus.setText("激活失败");
-                tvEquipmentStatus.setText("错误原因");
-                isActiveSuccess = true;//正式使用这个要去掉 测试使用
+                Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+                    RtmpConnection rtmpConnection = new RtmpConnection();
+                    boolean connect = rtmpConnection.connect(ApiConstants.rtmpUrl);
+                    emitter.onNext(connect);
+
+                })
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Observer<Boolean>() {
+                            @Override
+                            public void onSubscribe(Disposable d) {
+
+                            }
+
+                            @Override
+                            public void onNext(Boolean is) {
+                                if (!is) {
+                                    ivStatus.setBackgroundResource(R.drawable.ic_failed);
+                                    tvStatus.setText("激活失败");
+                                    tvEquipmentStatus.setText("直播服务异常");
+                                    isActiveSuccess = false;
+                                } else {
+                                    isActiveSuccess = true;//正式使用这个要去掉 测试使用
+                                }
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+
+                            }
+
+                            @Override
+                            public void onComplete() {
+
+                            }
+                        });
             }
             btnOperate.setText("完成");
             ivBack.setVisibility(View.GONE);
         }
 
-//        List<CommonRecyclerViewHolder> holderList = adapter.getHolderList();
-//        for (CommonRecyclerViewHolder holder : holderList) {
-//            SparseArray<View> viewSparseArray = holder.getmViews();
-//            for (int i = 0; i < viewSparseArray.size(); i++) {
-//                if (viewSparseArray.get(i) != null && viewSparseArray.get(i).getId() == R.id.tv_label) {
-//                    System.out.println(((TextView) viewSparseArray.get(i)).getText());
-//                } else if (viewSparseArray.get(i) != null && viewSparseArray.get(i).getId() == R.id.et_input)
-//                {
-//                    System.out.println(((EditText) viewSparseArray.get(i)).getText());
-//                }
-//            }
-//
-//        }
     }
 
     @Override
@@ -235,18 +277,19 @@ public class ActiveActivity extends BaseActivity {
     @Override
     public void load() {
         //网络配置
-        configList.add(new Config("网络配置", true));
-        configList.add(new Config("服务器", "192.168.0.112"));
-        configList.add(new Config("端口号", "44238"));
+        configList.add(new Config("网络配置", 1));
+        configList.add(new Config("网络配置", "服务器", "192.168.0.112", 1));
+        configList.add(new Config("网络配置", "端口号", "44238", 2));
         //监控配置
-        configList.add(new Config("监控配置", true));
-        configList.add(new Config("服务器", "192.168.0.254"));
-        configList.add(new Config("端口号", "1183"));
+        configList.add(new Config("监控配置", 2));
+        configList.add(new Config("监控配置", "服务器", "192.168.0.254", 1));
+        configList.add(new Config("监控配置", "端口号", "1183", 2));
         //本机配置
-        configList.add(new Config("本机配置", true));
-        configList.add(new Config("序列号", "XXSQFE0023158"));
-        configList.add(new Config("工位号", "15368"));
-        configList.add(new Config("机器码", "1183"));
+        configList.add(new Config("本机配置", 3));
+        configList.add(new Config("本机配置", "序列号", "XXSQFE0023158", 1));
+        configList.add(new Config("本机配置", "工位号", "15368", 2));
+        configList.add(new Config("本机配置", "机器码", "1183", 3));
+
         adapter.notifyDataSetChanged();
     }
 }

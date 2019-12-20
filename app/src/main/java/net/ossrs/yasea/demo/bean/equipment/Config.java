@@ -5,21 +5,28 @@ package net.ossrs.yasea.demo.bean.equipment;
  */
 public class Config {
 
-    private boolean isTitle;
+    //标题
+    private String title;
+    //栏目
     private String label;
+    //栏目 值
     private String input;
+
+    private Integer sort;
 
     public Config() {
     }
 
-    public Config(String label, String input) {
+    public Config(String title, String label, String input, Integer sort) {
+        this.title = title;
         this.label = label;
         this.input = input;
+        this.sort = sort;
     }
 
-    public Config(String label, boolean isTitle) {
-        this.isTitle = isTitle;
+    public Config(String label, Integer sort) {
         this.label = label;
+        this.sort = sort;
     }
 
     public String getLabel() {
@@ -38,20 +45,29 @@ public class Config {
         this.input = input;
     }
 
-    public boolean isTitle() {
-        return isTitle;
+    public String getTitle() {
+        return title;
     }
 
-    public void setTitle(boolean title) {
-        isTitle = title;
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public Integer getSort() {
+        return sort;
+    }
+
+    public void setSort(Integer sort) {
+        this.sort = sort;
     }
 
     @Override
     public String toString() {
         return "Config{" +
-                "isTitle=" + isTitle +
+                "title='" + title + '\'' +
                 ", label='" + label + '\'' +
                 ", input='" + input + '\'' +
+                ", sort=" + sort +
                 '}';
     }
 }

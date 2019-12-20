@@ -82,6 +82,10 @@ public class RtmpConnection implements RtmpPublisher {
     private long videoLastTimeMillis;
     private long audioLastTimeMillis;
 
+    public RtmpConnection(){
+
+    }
+
     public RtmpConnection(RtmpHandler handler) {
         mHandler = handler;
     }
