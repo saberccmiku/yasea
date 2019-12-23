@@ -7,6 +7,9 @@ import android.os.Environment;
 import android.os.StatFs;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 
 /**
  * <p/>
@@ -128,4 +131,31 @@ public class CommonUtil {
         } else
             return getSDcardAvailableSize();
     }
+
+    /**
+     * 测试连接服务器
+     *
+     * @param ip   服务器IP
+     * @param port 服务器端口
+     * @return 连接成功返回<code>true</code>,连接失败返回<code>false</code>.
+     */
+    public static boolean testServerConnect(String ip, int port) {
+        boolean result = false;
+        Socket connect = new Socket();
+        try {
+            connect.connect(
+                    new InetSocketAddress(ip, port), 1000); //连接服务器，每隔1秒重试
+            result = connect.isConnected();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                connect.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return result;
+    }
+
 }
