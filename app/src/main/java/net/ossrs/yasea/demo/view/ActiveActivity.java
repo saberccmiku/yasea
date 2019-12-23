@@ -22,7 +22,6 @@ import android.widget.Toast;
 
 import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
-import com.github.faucamp.simplertmp.io.RtmpConnection;
 
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.adapter.CommonRecyclerAdapter;
@@ -30,8 +29,6 @@ import net.ossrs.yasea.demo.adapter.CommonRecyclerViewHolder;
 import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.equipment.Config;
-import net.ossrs.yasea.demo.bean.equipment.NetConfig;
-import net.ossrs.yasea.demo.net.ApiConstants;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
 
@@ -59,6 +56,8 @@ public class ActiveActivity extends BaseActivity {
             Manifest.permission.READ_PHONE_STATE
     };
 
+    private final String TAG = ActiveActivity.class.getName();
+
     @BindView(R.id.rv_active)
     RecyclerView rvActive;
     @BindView(R.id.btn_operate)
@@ -75,6 +74,7 @@ public class ActiveActivity extends BaseActivity {
     TextView tvStatus;
     @BindView(R.id.tv_equipment_status)
     TextView tvEquipmentStatus;
+    private Box<Config> netConfigBox;
 
 
     @Override
@@ -84,6 +84,7 @@ public class ActiveActivity extends BaseActivity {
 
     @Override
     public void initView() {
+        netConfigBox = IApplication.boxStore.boxFor(Config.class);
         configList = new ArrayList<>();
         rvActive.setLayoutManager(new LinearLayoutManager(this));
         adapter = new CommonRecyclerAdapter<Config>(this, R.layout.item_config_content, configList) {
@@ -135,8 +136,7 @@ public class ActiveActivity extends BaseActivity {
                         return;
                     }
                     //保存数据
-                    Box<NetConfig> netConfigBox = IApplication.boxStore.boxFor(NetConfig.class);
-                    netConfigBox.put(new NetConfig());
+                    netConfigBox.put(configList);
 
                     startActivity(new Intent(ActiveActivity.this, MainActivity.class));
                     ActiveActivity.this.finish();
@@ -152,6 +152,16 @@ public class ActiveActivity extends BaseActivity {
                     break;
             }
         } else {
+            boolean isComplete = true;//判断信息是否填写完整
+            for (Config config : configList) {
+                if (!TextUtils.isEmpty(config.getTitle()) && TextUtils.isEmpty(config.getInput())) {
+                    isComplete = false;
+                }
+                if (!isComplete) {
+                    Toast.makeText(this, config.getLabel()+"未填写", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
             llConfig.setVisibility(View.GONE);
             rlOperateStatus.setVisibility(View.VISIBLE);
             if (isActiveSuccess) {
@@ -161,46 +171,17 @@ public class ActiveActivity extends BaseActivity {
                 activeEngine(null);
 
             } else {
-                Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
-                    RtmpConnection rtmpConnection = new RtmpConnection();
-                    boolean connect = rtmpConnection.connect(ApiConstants.rtmpUrl);
-                    emitter.onNext(connect);
-
-                })
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(new Observer<Boolean>() {
-                            @Override
-                            public void onSubscribe(Disposable d) {
-
-                            }
-
-                            @Override
-                            public void onNext(Boolean is) {
-                                if (!is) {
-                                    ivStatus.setBackgroundResource(R.drawable.ic_failed);
-                                    tvStatus.setText("激活失败");
-                                    tvEquipmentStatus.setText("直播服务异常");
-                                    isActiveSuccess = false;
-                                } else {
-                                    isActiveSuccess = true;//正式使用这个要去掉 测试使用
-                                }
-                            }
-
-                            @Override
-                            public void onError(Throwable e) {
-
-                            }
-
-                            @Override
-                            public void onComplete() {
-
-                            }
-                        });
+                ivStatus.setBackgroundResource(R.drawable.ic_failed);
+                tvStatus.setText("激活失败");
+                tvEquipmentStatus.setText("服务异常");
+                isActiveSuccess = true;//正式使用这个要去掉 测试使用
             }
-            btnOperate.setText("完成");
-            ivBack.setVisibility(View.GONE);
+
+
         }
+        btnOperate.setText("完成");
+        ivBack.setVisibility(View.GONE);
+
 
     }
 
@@ -276,6 +257,49 @@ public class ActiveActivity extends BaseActivity {
 
     @Override
     public void load() {
+
+        Observable.create((ObservableOnSubscribe<List<Config>>) emitter -> emitter.onNext(netConfigBox.getAll()))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<List<Config>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(List<Config> list) {
+
+                        if (list != null && list.size() != 0) {
+                            configList.clear();
+                            configList.addAll(list);
+                            adapter.notifyDataSetChanged();
+                        } else {
+                            //加载默认数据配置
+                            loadDefaultData();
+                        }
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+
+    }
+
+    /**
+     * 加载默认数据配置
+     */
+    private void loadDefaultData() {
+
+        configList.clear();
         //网络配置
         configList.add(new Config("网络配置", 1));
         configList.add(new Config("网络配置", "服务器", "192.168.0.112", 1));

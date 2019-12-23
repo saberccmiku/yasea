@@ -1,10 +1,16 @@
 package net.ossrs.yasea.demo.bean.equipment;
 
+import io.objectbox.annotation.Entity;
+import io.objectbox.annotation.Id;
+
 /**
  * 用户app列表展示
  */
+@Entity
 public class Config {
 
+    @Id
+    private long id;
     //标题
     private String title;
     //栏目
@@ -27,6 +33,14 @@ public class Config {
     public Config(String label, Integer sort) {
         this.label = label;
         this.sort = sort;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public String getLabel() {
@@ -64,7 +78,8 @@ public class Config {
     @Override
     public String toString() {
         return "Config{" +
-                "title='" + title + '\'' +
+                "id=" + id +
+                ", title='" + title + '\'' +
                 ", label='" + label + '\'' +
                 ", input='" + input + '\'' +
                 ", sort=" + sort +
