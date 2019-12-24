@@ -388,7 +388,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     @BindView(R.id.tv_online)
     TextView tvOnline;
 
-    @OnClick(R.id.fab_online)
+    @OnClick(R.id.btn_online)
     public void setOnline() {
         isOnline = !isOnline;
         if (isOnline) {
@@ -403,7 +403,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             btnSwitchEncoder.setEnabled(false);
             btnPause.setEnabled(true);
             flVideo.setVisibility(View.VISIBLE);
-            llVideoBtn.setVisibility(View.VISIBLE);
             tvOnline.setText("工作中");
         } else {
             mPublisher.stopPublish();
@@ -424,7 +423,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      *
      * @param view 注册按钮
      */
-    @OnClick(R.id.fab_register)
+    @OnClick(R.id.btn_register)
     public void register(View view) {
         if (registerStatus == REGISTER_STATUS_DONE) {
             registerStatus = REGISTER_STATUS_READY;

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:fab="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -36,6 +35,7 @@
         </FrameLayout>
 
         <TextView
+            android:id="@+id/tv_workstation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
@@ -60,8 +60,8 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:orientation="horizontal"
-            android:weightSum="5"
-            android:visibility="gone">
+            android:visibility="gone"
+            android:weightSum="5">
 
             <Button
                 android:id="@+id/pause"
@@ -99,8 +99,8 @@
         <android.support.v7.widget.RecyclerView
             android:id="@+id/recycler_view_person"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tv_workstation" />
 
 
     </RelativeLayout>
@@ -127,76 +127,53 @@
 
         <!-- android:background="@drawable/bk_footer" -->
 
-        <Button
+        <TextView
             android:id="@+id/btn_business"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:drawableTop="@drawable/ic_business"
             android:background="@android:color/transparent"
-            android:text="业务办理"
-            tools:ignore="ButtonStyle" />
+            android:padding="5dp"
+            android:gravity="center"
+            android:textSize="12sp"
+            android:text="业务办理" />
 
-        <Button
-            android:id="@+id/btn_1"
+        <TextView
+            android:id="@+id/btn_online"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@android:color/transparent"
-            android:button="@null"
-            android:checked="true"
-            android:text="预留按钮1"
-            tools:ignore="ButtonStyle" />
+            android:drawableTop="@drawable/ic_business"
+            android:padding="5dp"
+            android:gravity="center"
+            android:textSize="12sp"
+            android:text="上线" />
 
-        <Button
-            android:id="@+id/btn_2"
+        <TextView
+            android:id="@+id/btn_register"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@android:color/transparent"
-            android:text="预留按钮2"
-            tools:ignore="ButtonStyle" />
+            android:drawableTop="@drawable/ic_business"
+            android:padding="5dp"
+            android:gravity="center"
+            android:textSize="12sp"
+            android:text="注册" />
 
-        <Button
+        <TextView
             android:id="@+id/btn_3"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@android:color/transparent"
-            android:text="预留按钮3"
-            tools:ignore="ButtonStyle" />
+            android:drawableTop="@drawable/ic_business"
+            android:padding="5dp"
+            android:gravity="center"
+            android:textSize="12sp"
+            android:text="预留按钮3" />
     </LinearLayout>
-
-    <com.custom.view.floatingactionbutton.FloatingActionsMenu
-        android:id="@+id/multiple_actions"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginEnd="10dp"
-        android:layout_marginBottom="100dp"
-        fab:fab_addButtonColorNormal="@color/white"
-        fab:fab_addButtonColorPressed="@color/white_pressed"
-        fab:fab_addButtonPlusIconColor="@color/half_black"
-        fab:fab_labelStyle="@style/menu_labels_style"
-        tools:ignore="RelativeOverlap,RtlHardcoded">
-
-        <com.custom.view.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_online"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            fab:fab_colorNormal="@color/white"
-            fab:fab_colorPressed="@color/white_pressed"
-            fab:fab_title="上线/下线" />
-
-        <com.custom.view.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_register"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            fab:fab_colorNormal="@color/white"
-            fab:fab_colorPressed="@color/white_pressed"
-            fab:fab_title="注册" />
-
-    </com.custom.view.floatingactionbutton.FloatingActionsMenu>
 
 </RelativeLayout>

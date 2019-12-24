@@ -36,4 +36,13 @@
         android:text="@string/active"
         android:layout_above="@+id/tv_version"/>
 
+    <ImageButton
+        android:id="@+id/ib_setting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/ic_setting"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="10dp"
+        android:contentDescription="@string/app_name" />
+
 </RelativeLayout>

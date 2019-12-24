@@ -30,6 +30,7 @@ import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.util.Constants;
+import net.ossrs.yasea.demo.util.ResCode;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
 
 import java.util.ArrayList;
@@ -49,7 +50,6 @@ public class ActiveActivity extends BaseActivity {
 
     private List<Config> configList;
     private CommonRecyclerAdapter<Config> adapter;
-    private boolean isActiveSuccess;
     private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
     private static final String[] NEEDED_PERMISSIONS = new String[]{
             Manifest.permission.CAMERA,
@@ -137,7 +137,6 @@ public class ActiveActivity extends BaseActivity {
                     }
                     //保存数据
                     netConfigBox.put(configList);
-
                     startActivity(new Intent(ActiveActivity.this, MainActivity.class));
                     ActiveActivity.this.finish();
                     break;
@@ -158,31 +157,14 @@ public class ActiveActivity extends BaseActivity {
                     isComplete = false;
                 }
                 if (!isComplete) {
-                    Toast.makeText(this, config.getLabel()+"未填写", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, config.getLabel() + "未填写", Toast.LENGTH_SHORT).show();
                     return;
                 }
             }
-            llConfig.setVisibility(View.GONE);
-            rlOperateStatus.setVisibility(View.VISIBLE);
-            if (isActiveSuccess) {
-                ivStatus.setBackgroundResource(R.drawable.ic_success);
-                tvStatus.setText("激活成功");
-                tvEquipmentStatus.setText("设备激活成功");
-                activeEngine(null);
-
-            } else {
-                ivStatus.setBackgroundResource(R.drawable.ic_failed);
-                tvStatus.setText("激活失败");
-                tvEquipmentStatus.setText("服务异常");
-                isActiveSuccess = true;//正式使用这个要去掉 测试使用
-            }
-
+            //检测服务
+            checkServer();
 
         }
-        btnOperate.setText("完成");
-        ivBack.setVisibility(View.GONE);
-
-
     }
 
     @Override
@@ -194,7 +176,7 @@ public class ActiveActivity extends BaseActivity {
                 isAllGranted &= (grantResult == PackageManager.PERMISSION_GRANTED);
             }
             if (isAllGranted) {
-                activeEngine(null);
+                activeEngine();
             } else {
                 Toast.makeText(this, "权限不足", Toast.LENGTH_SHORT).show();
             }
@@ -203,16 +185,11 @@ public class ActiveActivity extends BaseActivity {
 
     /**
      * 激活引擎
-     *
-     * @param view
      */
-    public void activeEngine(final View view) {
+    public void activeEngine() {
         if (!CommonUtil.checkPermissions(this, NEEDED_PERMISSIONS)) {
             ActivityCompat.requestPermissions(this, NEEDED_PERMISSIONS, ACTION_REQUEST_PERMISSIONS);
             return;
-        }
-        if (view != null) {
-            view.setClickable(false);
         }
         Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
             FaceEngine faceEngine = new FaceEngine();
@@ -224,22 +201,32 @@ public class ActiveActivity extends BaseActivity {
                 .subscribe(new Observer<Integer>() {
                     @Override
                     public void onSubscribe(Disposable d) {
-
+                        btnOperate.setClickable(false);
                     }
 
                     @Override
                     public void onNext(Integer activeCode) {
+                        String ivStatusText;
+                        String tvEquipmentStatusText;
                         if (activeCode == ErrorInfo.MOK) {
-                            Toast.makeText(ActiveActivity.this, "激活成功", Toast.LENGTH_SHORT).show();
+                            ivStatus.setBackgroundResource(R.drawable.ic_success);
+                            ivStatusText = ResCode.ACTIVE_SUCCESS.getMsg();
+                            tvEquipmentStatusText = "设备激活成功";
                         } else if (activeCode == ErrorInfo.MERR_ASF_ALREADY_ACTIVATED) {
-                            Toast.makeText(ActiveActivity.this, "已激活", Toast.LENGTH_SHORT).show();
+                            ivStatus.setBackgroundResource(R.drawable.ic_success);
+                            ivStatusText = ResCode.ACTIVE_SUCCESS.getMsg();
+                            tvEquipmentStatusText = "激活成功";
                         } else {
-                            Toast.makeText(ActiveActivity.this, "激活失败:" + activeCode, Toast.LENGTH_SHORT).show();
+                            ivStatus.setBackgroundResource(R.drawable.ic_failed);
+                            ivStatusText = ResCode.ACTIVE_ERROR.getMsg();
+                            tvEquipmentStatusText = "人脸识别引擎激活失败:" + activeCode;
                         }
+                        tvStatus.setText(ivStatusText);
+                        tvEquipmentStatus.setText(tvEquipmentStatusText);
+                        btnOperate.setText("完成");
+                        ivBack.setVisibility(View.GONE);
+                        btnOperate.setClickable(true);
 
-                        if (view != null) {
-                            view.setClickable(true);
-                        }
                     }
 
                     @Override
@@ -249,7 +236,7 @@ public class ActiveActivity extends BaseActivity {
 
                     @Override
                     public void onComplete() {
-
+                        btnOperate.setClickable(true);
                     }
                 });
 
@@ -306,8 +293,8 @@ public class ActiveActivity extends BaseActivity {
         configList.add(new Config("网络配置", "端口号", "44238", 2));
         //监控配置
         configList.add(new Config("监控配置", 2));
-        configList.add(new Config("监控配置", "服务器", "192.168.0.254", 1));
-        configList.add(new Config("监控配置", "端口号", "1183", 2));
+        configList.add(new Config("监控配置", "服务器", "192.168.1.25", 1));
+        configList.add(new Config("监控配置", "端口号", "80", 2));
         //本机配置
         configList.add(new Config("本机配置", 3));
         configList.add(new Config("本机配置", "序列号", "XXSQFE0023158", 1));
@@ -315,5 +302,56 @@ public class ActiveActivity extends BaseActivity {
         configList.add(new Config("本机配置", "机器码", "1183", 3));
 
         adapter.notifyDataSetChanged();
+    }
+
+    private void checkServer() {
+        Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+            String liveIp = null;
+            String livePort = null;
+            for (Config config : configList) {
+                if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals("监控配置")) {
+                    if (config.getLabel().equals("服务器")) {
+                        liveIp = config.getInput();
+                    } else if (config.getLabel().equals("端口号")) {
+                        livePort = config.getInput();
+                    }
+                }
+            }
+            assert livePort != null;
+            emitter.onNext(net.ossrs.yasea.demo.util.CommonUtil.testServerConnect(liveIp, Integer.valueOf(livePort)));
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Boolean>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        btnOperate.setClickable(false);
+                    }
+
+                    @Override
+                    public void onNext(Boolean aBoolean) {
+                        if (aBoolean) {
+                            llConfig.setVisibility(View.GONE);
+                            rlOperateStatus.setVisibility(View.VISIBLE);
+                            //激活设备
+                            activeEngine();
+                        } else {
+                            btnOperate.setClickable(true);
+                            Toast.makeText(ActiveActivity.this, ResCode.LIVE_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        btnOperate.setClickable(true);
+                    }
+                });
+
+
     }
 }
