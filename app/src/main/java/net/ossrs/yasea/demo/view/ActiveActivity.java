@@ -29,6 +29,7 @@ import net.ossrs.yasea.demo.adapter.CommonRecyclerViewHolder;
 import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.equipment.Config;
+import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
@@ -288,18 +289,18 @@ public class ActiveActivity extends BaseActivity {
 
         configList.clear();
         //网络配置
-        configList.add(new Config("网络配置", 1));
-        configList.add(new Config("网络配置", "服务器", "192.168.0.112", 1));
-        configList.add(new Config("网络配置", "端口号", "44238", 2));
+        configList.add(new Config(ConfigPattern.NETWORK, 1));
+        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.SERVER, "192.168.0.112", 1));
+        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.PORT, "44238", 2));
         //监控配置
-        configList.add(new Config("监控配置", 2));
-        configList.add(new Config("监控配置", "服务器", "192.168.1.25", 1));
-        configList.add(new Config("监控配置", "端口号", "80", 2));
+        configList.add(new Config(ConfigPattern.MONITOR, 2));
+        configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.SERVER, "192.168.1.25", 1));
+        configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.PORT, "80", 2));
         //本机配置
-        configList.add(new Config("本机配置", 3));
-        configList.add(new Config("本机配置", "序列号", "XXSQFE0023158", 1));
-        configList.add(new Config("本机配置", "工位号", "15368", 2));
-        configList.add(new Config("本机配置", "机器码", "1183", 3));
+        configList.add(new Config(ConfigPattern.LOCAL, 3));
+        configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.SERIAL, "XXSQFE0023158", 1));
+        configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.STATION, "15368", 2));
+        configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.IMEI, "1183", 3));
 
         adapter.notifyDataSetChanged();
     }
@@ -309,10 +310,10 @@ public class ActiveActivity extends BaseActivity {
             String liveIp = null;
             String livePort = null;
             for (Config config : configList) {
-                if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals("监控配置")) {
-                    if (config.getLabel().equals("服务器")) {
+                if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.MONITOR)) {
+                    if (config.getLabel().equals(ConfigPattern.SERVER)) {
                         liveIp = config.getInput();
-                    } else if (config.getLabel().equals("端口号")) {
+                    } else if (config.getLabel().equals(ConfigPattern.PORT)) {
                         livePort = config.getInput();
                     }
                 }

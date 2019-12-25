@@ -1,26 +1,27 @@
 package net.ossrs.yasea.demo.view;
 
+import android.Manifest;
 import android.content.Intent;
+import android.support.v4.app.ActivityCompat;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.trello.rxlifecycle2.RxLifecycle;
-import com.trello.rxlifecycle2.android.ActivityEvent;
+import com.arcsoft.face.ErrorInfo;
+import com.arcsoft.face.FaceEngine;
 
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
-import net.ossrs.yasea.demo.bean.RecommendInfo;
 import net.ossrs.yasea.demo.bean.equipment.Config;
-import net.ossrs.yasea.demo.net.RetrofitHelper;
+import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
+import net.ossrs.yasea.demo.bean.equipment.Config_;
 import net.ossrs.yasea.demo.util.CommonUtil;
+import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -38,6 +39,11 @@ public class SplashActivity extends BaseActivity {
     private final String BTN_ACTIVE_RETRY = "重试";
     private final String BTN_ACTIVE_CONFIG = "前往配置";
     private Box<Config> netConfigBox;
+    private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
+    private static final String[] NEEDED_PERMISSIONS = new String[]{
+            Manifest.permission.CAMERA,
+            Manifest.permission.READ_PHONE_STATE
+    };
 
 
     @BindView(R.id.tv_status)
@@ -69,22 +75,20 @@ public class SplashActivity extends BaseActivity {
         }
     }
 
-    private void checkServer() {
+    private void checkLiveServer() {
 
         Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
-            List<Config> configList = netConfigBox.getAll();
+            List<Config> configList = netConfigBox.query()
+                    .equal(Config_.title, ConfigPattern.MONITOR).build().find();
             String liveIp = null;
-            String livePort = null;
+            String livePort = "0";
             for (Config config : configList) {
-                if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals("监控配置")) {
-                    if (config.getLabel().equals("服务器")) {
-                        liveIp = config.getInput();
-                    } else if (config.getLabel().equals("端口号")) {
-                        livePort = config.getInput();
-                    }
+                if (config.getLabel().equals(ConfigPattern.SERVER)) {
+                    liveIp = config.getInput();
+                } else if (config.getLabel().equals(ConfigPattern.PORT)) {
+                    livePort = config.getInput();
                 }
             }
-            assert livePort != null;
             emitter.onNext(CommonUtil.testServerConnect(liveIp, Integer.valueOf(livePort)));
 
         }).subscribeOn(Schedulers.io())
@@ -98,35 +102,36 @@ public class SplashActivity extends BaseActivity {
                     @Override
                     public void onNext(Boolean aBoolean) {
                         if (aBoolean) {
-                            RetrofitHelper.getAppAPI()//基础URL
-                                    .getRecommendedInfo()//接口后缀URL
-                                    .compose(RxLifecycle.bindUntilEvent(lifecycle(), ActivityEvent.DESTROY))//设计是否备份数据
-                                    .delay(1, TimeUnit.SECONDS)
-                                    //.map(RecommendInfo::getResult)//得到JSON子数组
-                                    .subscribeOn(Schedulers.io())//设计线程读写方式
-                                    .observeOn(AndroidSchedulers.mainThread())//指定线程运行的位置
-                                    .subscribe(new Observer<RecommendInfo>() {
-                                        @Override
-                                        public void onSubscribe(Disposable d) {
+//                            RetrofitHelper.getAppAPI()//基础URL
+//                                    .getRecommendedInfo()//接口后缀URL
+//                                    .compose(RxLifecycle.bindUntilEvent(lifecycle(), ActivityEvent.DESTROY))//设计是否备份数据
+//                                    .delay(1, TimeUnit.SECONDS)
+//                                    //.map(RecommendInfo::getResult)//得到JSON子数组
+//                                    .subscribeOn(Schedulers.io())//设计线程读写方式
+//                                    .observeOn(AndroidSchedulers.mainThread())//指定线程运行的位置
+//                                    .subscribe(new Observer<RecommendInfo>() {
+//                                        @Override
+//                                        public void onSubscribe(Disposable d) {
+//
+//                                        }
+//
+//                                        @Override
+//                                        public void onNext(RecommendInfo recommendInfo) {
+//                                            activeEngine();
+//                                        }
+//
+//                                        @Override
+//                                        public void onError(Throwable e) {
+//                                            Toast.makeText(SplashActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+//                                        }
+//
+//                                        @Override
+//                                        public void onComplete() {
+//                                        }
+//                                    });
 
-                                        }
+                            checkCenterServer();
 
-                                        @Override
-                                        public void onNext(RecommendInfo recommendInfo) {
-                                            tvStatus.setText(ResCode.EQUIPMENT_NOT_ACTIVE.getMsg());
-                                            btnActive.setText(BTN_ACTIVE_ACTIVE);
-                                            btnActive.setVisibility(View.VISIBLE);
-                                        }
-
-                                        @Override
-                                        public void onError(Throwable e) {
-                                            Toast.makeText(SplashActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-                                        }
-
-                                        @Override
-                                        public void onComplete() {
-                                        }
-                                    });
                         } else {
                             tvStatus.setText(ResCode.LIVE_SERVER_ERROR.getMsg());
                             btnActive.setText(BTN_ACTIVE_RETRY);
@@ -145,6 +150,51 @@ public class SplashActivity extends BaseActivity {
                     }
                 });
 
+
+    }
+
+    /**
+     * 检查数据解析服务系统
+     */
+    private void checkCenterServer() {
+
+        Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+            String ip = null;
+            String port = "0";
+            List<Config> configList = netConfigBox.query()
+                    .equal(Config_.title, ConfigPattern.NETWORK).build().find();
+            for (Config config : configList) {
+                if (config.getLabel().equals(ConfigPattern.SERVER)) {
+                    ip = config.getInput();
+                } else if (config.getLabel().equals(ConfigPattern.PORT)) {
+                    port = config.getInput();
+                }
+            }
+            emitter.onNext(CommonUtil.testServerConnect(ip, Integer.valueOf(port)));
+        }).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Boolean>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(Boolean aBoolean) {
+                        //检查系统是否激活
+                        activeEngine();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
 
     }
 
@@ -178,8 +228,8 @@ public class SplashActivity extends BaseActivity {
                             btnActive.setText(BTN_ACTIVE_CONFIG);
                             btnActive.setVisibility(View.VISIBLE);
                         } else {
-                            //检测服务
-                            checkServer();
+                            //检测直播服务服务
+                            checkLiveServer();
                         }
                     }
 
@@ -203,8 +253,8 @@ public class SplashActivity extends BaseActivity {
                     toActiveActivity();
                     break;
                 case BTN_ACTIVE_RETRY://重试
-                    //检测服务
-                    checkServer();
+                    //检测直播服务
+                    checkLiveServer();
                     break;
                 case BTN_ACTIVE_CONFIG://前往配置
                     toActiveActivity();
@@ -213,5 +263,52 @@ public class SplashActivity extends BaseActivity {
                     break;
             }
         }
+    }
+
+    /**
+     * 检查设备是否激活
+     */
+    public void activeEngine() {
+        if (!net.ossrs.yasea.demo.util.permission.CommonUtil.checkPermissions(this, NEEDED_PERMISSIONS)) {
+            ActivityCompat.requestPermissions(this, NEEDED_PERMISSIONS, ACTION_REQUEST_PERMISSIONS);
+            return;
+        }
+        Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
+            FaceEngine faceEngine = new FaceEngine();
+            int activeCode = faceEngine.active(SplashActivity.this, Constants.APP_ID, Constants.SDK_KEY);
+            emitter.onNext(activeCode);
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Integer>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(Integer activeCode) {
+                        if (activeCode == ErrorInfo.MOK || activeCode == ErrorInfo.MERR_ASF_ALREADY_ACTIVATED) {
+                            startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                            SplashActivity.this.finish();
+                        } else {
+                            String text = "人脸识别引擎未激活" + activeCode;
+                            tvStatus.setText(text);
+                            btnActive.setText(BTN_ACTIVE_ACTIVE);
+                            btnActive.setVisibility(View.VISIBLE);
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+
     }
 }

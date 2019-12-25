@@ -3,19 +3,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#00A9ED"
-    android:clipToPadding="true"
-    android:fitsSystemWindows="true"
     android:orientation="vertical"
+    android:background="@drawable/outline"
     tools:context="net.ossrs.yasea.demo.view.MainActivity">
 
 
     <RelativeLayout
+        android:id="@+id/rl_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/diver"
-        android:layout_marginBottom="2dp"
-        android:background="@drawable/outline">
+        android:layout_above="@+id/diver">
 
         <FrameLayout
             android:id="@+id/fl_video"
@@ -40,7 +37,6 @@
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
             android:layout_alignParentTop="true"
-            android:padding="10dp"
             android:text="工位:1003"
             android:textColor="@color/white" />
 
@@ -50,7 +46,6 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_alignParentEnd="true"
-            android:padding="10dp"
             android:text="离线中"
             android:textColor="@android:color/holo_red_light" />
 
@@ -128,7 +123,7 @@
         <!-- android:background="@drawable/bk_footer" -->
 
         <TextView
-            android:id="@+id/btn_business"
+            android:id="@+id/tv_business"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -140,19 +135,19 @@
             android:text="业务办理" />
 
         <TextView
-            android:id="@+id/btn_online"
+            android:id="@+id/tv_online_status"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@android:color/transparent"
-            android:drawableTop="@drawable/ic_business"
+            android:drawableTop="@drawable/ic_outline"
             android:padding="5dp"
             android:gravity="center"
             android:textSize="12sp"
             android:text="上线" />
 
         <TextView
-            android:id="@+id/btn_register"
+            android:id="@+id/tv_register"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -164,7 +159,7 @@
             android:text="注册" />
 
         <TextView
-            android:id="@+id/btn_3"
+            android:id="@+id/tv_3"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"

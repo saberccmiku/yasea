@@ -2,6 +2,7 @@ package net.ossrs.yasea.demo.view;
 
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.os.Environment;
 import android.os.Handler;
@@ -40,16 +41,20 @@ import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
 import net.ossrs.yasea.demo.R;
+import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
+import net.ossrs.yasea.demo.bean.equipment.Config;
+import net.ossrs.yasea.demo.bean.equipment.Config_;
 import net.ossrs.yasea.demo.faceserver.CompareResult;
 import net.ossrs.yasea.demo.faceserver.FaceServer;
 import net.ossrs.yasea.demo.net.ApiConstants;
 import net.ossrs.yasea.demo.util.ConfigUtil;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.DrawHelper;
+import net.ossrs.yasea.demo.util.ViewUtil;
 import net.ossrs.yasea.demo.util.face.FaceHelper;
 import net.ossrs.yasea.demo.util.face.FaceListener;
 import net.ossrs.yasea.demo.util.face.RequestFeatureStatus;
@@ -71,6 +76,7 @@ import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.OnClick;
+import io.objectbox.Box;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -288,6 +294,11 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         // response screen rotation event
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
         // restore data.
+        //满足摄像状态下的沉浸式，为其他布局设置一定的状态栏高度，避免和状态栏重叠
+        int statusBarHeight = ViewUtil.getStatusBarHeight(this);
+        tvWorkstation.setPadding(10, statusBarHeight + 10, 10, 10);
+        tvOnline.setPadding(10, statusBarHeight + 10, 10, 10);
+
         btnPublish = (Button) findViewById(R.id.publish);
         btnSwitchCamera = (Button) findViewById(R.id.swCam);
         btnRecord = (Button) findViewById(R.id.record);
@@ -373,9 +384,50 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 .faceListener(faceListener)
                 .build();
         drawHelper = new DrawHelper(580, 600,
-                900, 1020,
+                900, 1100,
                 0, mPublisher.getCameraId(),
                 false, false, false);
+
+        //获取配置信息
+        findLocalConfig();
+
+    }
+
+    private void findLocalConfig() {
+
+        Observable.create((ObservableOnSubscribe<List<Config>>) emitter -> {
+
+            Box<Config> configBox = IApplication.boxStore.boxFor(Config.class);
+            List<Config> configList = configBox.query()
+                    .equal(Config_.title, "本机配置")
+                    .and().equal(Config_.label, "工位号")
+                    .build().find();
+            emitter.onNext(configList);
+
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<List<Config>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(List<Config> list) {
+                        tvWorkstation.setText(list.get(0).getInput());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
 
     }
 
@@ -388,9 +440,16 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     @BindView(R.id.tv_online)
     TextView tvOnline;
 
-    @OnClick(R.id.btn_online)
+    @BindView(R.id.tv_workstation)
+    TextView tvWorkstation;
+
+    @BindView(R.id.tv_online_status)
+    TextView tvOnlineStatus;
+
+    @OnClick(R.id.tv_online_status)
     public void setOnline() {
         isOnline = !isOnline;
+        Drawable topDrawable;
         if (isOnline) {
             mPublisher.startPublish(rtmpUrl);
             mPublisher.startCamera();
@@ -404,6 +463,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             btnPause.setEnabled(true);
             flVideo.setVisibility(View.VISIBLE);
             tvOnline.setText("工作中");
+            topDrawable = getResources().getDrawable(R.drawable.ic_online, null);
+            tvOnlineStatus.setText("离线");
+
         } else {
             mPublisher.stopPublish();
             mPublisher.stopRecord();
@@ -414,8 +476,19 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             btnPause.setEnabled(false);
             flVideo.setVisibility(View.GONE);
             tvOnline.setText("离线中");
+            topDrawable = getResources().getDrawable(R.drawable.ic_outline, null);
+            tvOnlineStatus.setText("上线");
         }
 
+        //设置上下线按钮
+        topDrawable.setBounds(0, 0, topDrawable.getMinimumWidth(), topDrawable.getMinimumHeight());
+        tvOnlineStatus.setCompoundDrawables(null, topDrawable, null, null);
+
+    }
+
+    @OnClick(R.id.tv_business)
+    public void businessAction() {
+        Toast.makeText(this, "该功能还未开放", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -423,7 +496,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      *
      * @param view 注册按钮
      */
-    @OnClick(R.id.btn_register)
+    @OnClick(R.id.tv_register)
     public void register(View view) {
         if (registerStatus == REGISTER_STATUS_DONE) {
             registerStatus = REGISTER_STATUS_READY;
