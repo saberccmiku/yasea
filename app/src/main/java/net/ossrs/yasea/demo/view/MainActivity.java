@@ -1,5 +1,6 @@
 package net.ossrs.yasea.demo.view;
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
@@ -11,6 +12,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -41,16 +43,14 @@ import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
 import net.ossrs.yasea.demo.R;
-import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
 import net.ossrs.yasea.demo.bean.equipment.Config;
-import net.ossrs.yasea.demo.bean.equipment.Config_;
+import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
 import net.ossrs.yasea.demo.faceserver.CompareResult;
 import net.ossrs.yasea.demo.faceserver.FaceServer;
-import net.ossrs.yasea.demo.net.ApiConstants;
 import net.ossrs.yasea.demo.util.ConfigUtil;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.DrawHelper;
@@ -76,7 +76,6 @@ import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.OnClick;
-import io.objectbox.Box;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -102,7 +101,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private Button btnRecord;
     private Button btnSwitchEncoder;
     private Button btnPause;
-    private String rtmpUrl = ApiConstants.rtmpUrl;
+    private String rtmpUrl;
     private String recPath = Environment.getExternalStorageDirectory().getPath() + "/test.mp4";
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
@@ -291,6 +290,10 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     public void initView() {
+
+        //获取配置信息
+        findLocalConfig();
+
         // response screen rotation event
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
         // restore data.
@@ -387,48 +390,30 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 900, 1100,
                 0, mPublisher.getCameraId(),
                 false, false, false);
-
-        //获取配置信息
-        findLocalConfig();
-
     }
 
     private void findLocalConfig() {
+        Intent intent = getIntent();
+        ArrayList<Config> configList = intent.getParcelableArrayListExtra("config");
+        String ip = null;
+        String port = "0";
+        String station = "0";
+        for (Config config : configList) {
+            if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.MONITOR)) {
+                if (config.getLabel().equals(ConfigPattern.SERVER)) {
+                    ip = config.getInput();
+                } else if (config.getLabel().equals(ConfigPattern.PORT)) {
+                    port = config.getInput();
+                }
+            } else if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.LOCAL)) {
+                if (config.getLabel().equals(ConfigPattern.STATION)) {
+                    station = config.getInput();
+                }
+            }
+        }
 
-        Observable.create((ObservableOnSubscribe<List<Config>>) emitter -> {
-
-            Box<Config> configBox = IApplication.boxStore.boxFor(Config.class);
-            List<Config> configList = configBox.query()
-                    .equal(Config_.title, "本机配置")
-                    .and().equal(Config_.label, "工位号")
-                    .build().find();
-            emitter.onNext(configList);
-
-        })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<List<Config>>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
-
-                    }
-
-                    @Override
-                    public void onNext(List<Config> list) {
-                        tvWorkstation.setText(list.get(0).getInput());
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-
-                    }
-
-                    @Override
-                    public void onComplete() {
-
-                    }
-                });
-
+        rtmpUrl = "rtmp://" + ip + "/hls/test";
+        tvWorkstation.setText(station);
     }
 
     @BindView(R.id.ll_video_btn)

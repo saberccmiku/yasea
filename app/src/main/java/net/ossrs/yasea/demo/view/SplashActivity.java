@@ -181,8 +181,15 @@ public class SplashActivity extends BaseActivity {
 
                     @Override
                     public void onNext(Boolean aBoolean) {
-                        //检查系统是否激活
-                        activeEngine();
+                        if (aBoolean){
+                            //检查系统是否激活
+                            activeEngine();
+                        }else {
+                            tvStatus.setText(ResCode.CENTER_SERVER_ERROR.getMsg());
+                            btnActive.setText(BTN_ACTIVE_RETRY);
+                            btnActive.setVisibility(View.VISIBLE);
+                        }
+
                     }
 
                     @Override

@@ -3,6 +3,8 @@ package net.ossrs.yasea.demo.view;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.LinearLayoutManager;
@@ -30,6 +32,7 @@ import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
+import net.ossrs.yasea.demo.bean.equipment.Config_;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
@@ -138,7 +141,9 @@ public class ActiveActivity extends BaseActivity {
                     }
                     //保存数据
                     netConfigBox.put(configList);
-                    startActivity(new Intent(ActiveActivity.this, MainActivity.class));
+                    Intent intent = new Intent(ActiveActivity.this, MainActivity.class);
+                    intent.putParcelableArrayListExtra("config", (ArrayList<? extends Parcelable>) configList);
+                    startActivity(intent);
                     ActiveActivity.this.finish();
                     break;
                 case "激活失败":
@@ -162,8 +167,8 @@ public class ActiveActivity extends BaseActivity {
                     return;
                 }
             }
-            //检测服务
-            checkServer();
+            //检测监控服务
+            checkMonitorServer();
 
         }
     }
@@ -290,8 +295,8 @@ public class ActiveActivity extends BaseActivity {
         configList.clear();
         //网络配置
         configList.add(new Config(ConfigPattern.NETWORK, 1));
-        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.SERVER, "192.168.0.112", 1));
-        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.PORT, "44238", 2));
+        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.SERVER, "192.168.1.25", 1));
+        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.PORT, "9099", 2));
         //监控配置
         configList.add(new Config(ConfigPattern.MONITOR, 2));
         configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.SERVER, "192.168.1.25", 1));
@@ -305,7 +310,7 @@ public class ActiveActivity extends BaseActivity {
         adapter.notifyDataSetChanged();
     }
 
-    private void checkServer() {
+    private void checkMonitorServer() {
         Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
             String liveIp = null;
             String livePort = null;
@@ -332,10 +337,8 @@ public class ActiveActivity extends BaseActivity {
                     @Override
                     public void onNext(Boolean aBoolean) {
                         if (aBoolean) {
-                            llConfig.setVisibility(View.GONE);
-                            rlOperateStatus.setVisibility(View.VISIBLE);
-                            //激活设备
-                            activeEngine();
+                            //检测中央服务系统
+                            checkCenterServer();
                         } else {
                             btnOperate.setClickable(true);
                             Toast.makeText(ActiveActivity.this, ResCode.LIVE_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
@@ -355,4 +358,59 @@ public class ActiveActivity extends BaseActivity {
 
 
     }
+
+
+    /**
+     * 检查数据解析服务系统
+     */
+    private void checkCenterServer() {
+
+        Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+            String ip = null;
+            String port = "0";
+            for (Config config : configList) {
+                if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.NETWORK)) {
+                    if (config.getLabel().equals(ConfigPattern.SERVER)) {
+                        ip = config.getInput();
+                    } else if (config.getLabel().equals(ConfigPattern.PORT)) {
+                        port = config.getInput();
+                    }
+                }
+            }
+            emitter.onNext(net.ossrs.yasea.demo.util.CommonUtil.testServerConnect(ip, Integer.valueOf(port)));
+        }).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Boolean>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(Boolean aBoolean) {
+                        if (aBoolean) {
+                            llConfig.setVisibility(View.GONE);
+                            rlOperateStatus.setVisibility(View.VISIBLE);
+                            //检查系统是否激活
+                            activeEngine();
+                        } else {
+                            btnOperate.setClickable(true);
+                            Toast.makeText(ActiveActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
+                        }
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+
+    }
+
 }
