@@ -1,9 +1,10 @@
 package net.ossrs.yasea.demo.view;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Bundle;
+import android.graphics.drawable.Drawable;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -32,11 +33,12 @@ import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
-import net.ossrs.yasea.demo.bean.equipment.Config_;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
+import net.ossrs.yasea.demo.widget.LoadingDialog;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,6 +57,7 @@ public class ActiveActivity extends BaseActivity {
     private List<Config> configList;
     private CommonRecyclerAdapter<Config> adapter;
     private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
+    private LoadingDialog dialog;
     private static final String[] NEEDED_PERMISSIONS = new String[]{
             Manifest.permission.CAMERA,
             Manifest.permission.READ_PHONE_STATE
@@ -78,6 +81,7 @@ public class ActiveActivity extends BaseActivity {
     TextView tvStatus;
     @BindView(R.id.tv_equipment_status)
     TextView tvEquipmentStatus;
+
     private Box<Config> netConfigBox;
 
 
@@ -88,7 +92,6 @@ public class ActiveActivity extends BaseActivity {
 
     @Override
     public void initView() {
-        netConfigBox = IApplication.boxStore.boxFor(Config.class);
         configList = new ArrayList<>();
         rvActive.setLayoutManager(new LinearLayoutManager(this));
         adapter = new CommonRecyclerAdapter<Config>(this, R.layout.item_config_content, configList) {
@@ -119,6 +122,16 @@ public class ActiveActivity extends BaseActivity {
                         config.setInput(s.toString());
                     }
                 });
+                //工位号手动检测按钮
+                if (config.getLabel().equals(ConfigPattern.STATION)) {
+                    Drawable drawable = getResources().getDrawable(R.drawable.ic_search, null);
+                    drawable.setBounds(0, 0, drawable.getMinimumWidth(), drawable.getMinimumHeight());
+                    editText.setCompoundDrawables(null, null, drawable, null);
+                    editText.setEnabled(false);
+                    editText.setOnClickListener(v -> {
+                        checkCenterServer();
+                    });
+                }
             }
         };
         rvActive.setAdapter(adapter);
@@ -250,7 +263,10 @@ public class ActiveActivity extends BaseActivity {
 
     @Override
     public void load() {
-
+        //获取Config表
+        dialog = new LoadingDialog(ActiveActivity.this, R.style.mdialog);
+        dialog.show();
+        netConfigBox = IApplication.boxStore.boxFor(Config.class);
         Observable.create((ObservableOnSubscribe<List<Config>>) emitter -> emitter.onNext(netConfigBox.getAll()))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -271,7 +287,7 @@ public class ActiveActivity extends BaseActivity {
                             //加载默认数据配置
                             loadDefaultData();
                         }
-
+                        dialog.cancel();
                     }
 
                     @Override
@@ -302,15 +318,24 @@ public class ActiveActivity extends BaseActivity {
         configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.SERVER, "192.168.1.25", 1));
         configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.PORT, "80", 2));
         //本机配置
-        configList.add(new Config(ConfigPattern.LOCAL, 3));
-        configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.SERIAL, "XXSQFE0023158", 1));
-        configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.STATION, "15368", 2));
-        configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.IMEI, "1183", 3));
+        //获取序列号
+        try {
+            Class<?> c = Class.forName("android.os.SystemProperties");
+            Method get = c.getMethod("get", String.class, String.class);
+            @SuppressLint("HardwareIds") String serial = (String) (get.invoke(c, "ro.serialno", "unknown"));
+            configList.add(new Config(ConfigPattern.LOCAL, 3));
+            configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.SERIAL, serial, 1));
+            configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.STATION, "15368", 2));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         adapter.notifyDataSetChanged();
     }
 
     private void checkMonitorServer() {
+        dialog.show();
         Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
             String liveIp = null;
             String livePort = null;
@@ -340,6 +365,7 @@ public class ActiveActivity extends BaseActivity {
                             //检测中央服务系统
                             checkCenterServer();
                         } else {
+                            dialog.cancel();
                             btnOperate.setClickable(true);
                             Toast.makeText(ActiveActivity.this, ResCode.LIVE_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
                         }
@@ -364,7 +390,7 @@ public class ActiveActivity extends BaseActivity {
      * 检查数据解析服务系统
      */
     private void checkCenterServer() {
-
+        dialog.show();
         Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
             String ip = null;
             String port = "0";
@@ -394,6 +420,7 @@ public class ActiveActivity extends BaseActivity {
                             //检查系统是否激活
                             activeEngine();
                         } else {
+                            dialog.cancel();
                             btnOperate.setClickable(true);
                             Toast.makeText(ActiveActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
                         }

@@ -2,6 +2,8 @@ package net.ossrs.yasea.demo.view;
 
 import android.Manifest;
 import android.content.Intent;
+import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.text.TextUtils;
 import android.view.View;
@@ -20,7 +22,11 @@ import net.ossrs.yasea.demo.bean.equipment.Config_;
 import net.ossrs.yasea.demo.util.CommonUtil;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
+import net.ossrs.yasea.demo.util.permission.PermissionListener;
+import net.ossrs.yasea.demo.util.permission.PermissionsUtil;
+import net.ossrs.yasea.demo.widget.LoadingDialog;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
@@ -39,6 +45,7 @@ public class SplashActivity extends BaseActivity {
     private final String BTN_ACTIVE_RETRY = "重试";
     private final String BTN_ACTIVE_CONFIG = "前往配置";
     private Box<Config> netConfigBox;
+    private LoadingDialog dialog;
     private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
     private static final String[] NEEDED_PERMISSIONS = new String[]{
             Manifest.permission.CAMERA,
@@ -65,12 +72,34 @@ public class SplashActivity extends BaseActivity {
     @Override
     public void initView() {
 
-        //获取数据库信息
-        netConfigBox = IApplication.boxStore.boxFor(Config.class);
+        PermissionListener listener = new PermissionListener() {
+            @Override
+            public void permissionGranted(@NonNull String[] permissions) {
+
+                dialog = new LoadingDialog(SplashActivity.this,R.style.mdialog);
+                dialog.show();
+
+
+                //获取数据库信息
+                netConfigBox = IApplication.boxStore.boxFor(Config.class);
+                //检查服务状态
+                checkServer();
+            }
+
+            @Override
+            public void permissionDenied(@NonNull String[] permissions) {
+                SplashActivity.this.finish();
+            }
+        };
+        PermissionsUtil.requestPermission(this, listener, NEEDED_PERMISSIONS);
+    }
+
+    private void checkServer() {
         if (CommonUtil.isNetworkAvailable(this)) {
             //检查配置信息
             checkConfig();
         } else {
+            dialog.cancel();
             tvStatus.setText(ResCode.NETWORK_ERROR.getMsg());
         }
     }
@@ -133,6 +162,7 @@ public class SplashActivity extends BaseActivity {
                             checkCenterServer();
 
                         } else {
+                            dialog.cancel();
                             tvStatus.setText(ResCode.LIVE_SERVER_ERROR.getMsg());
                             btnActive.setText(BTN_ACTIVE_RETRY);
                             btnActive.setVisibility(View.VISIBLE);
@@ -181,10 +211,11 @@ public class SplashActivity extends BaseActivity {
 
                     @Override
                     public void onNext(Boolean aBoolean) {
-                        if (aBoolean){
+                        if (aBoolean) {
                             //检查系统是否激活
                             activeEngine();
-                        }else {
+                        } else {
+                            dialog.cancel();
                             tvStatus.setText(ResCode.CENTER_SERVER_ERROR.getMsg());
                             btnActive.setText(BTN_ACTIVE_RETRY);
                             btnActive.setVisibility(View.VISIBLE);
@@ -231,6 +262,7 @@ public class SplashActivity extends BaseActivity {
                             isComplete = false;
                         }
                         if (!isComplete) {
+                            dialog.cancel();
                             tvStatus.setText("配置信息不全,请前往配置");
                             btnActive.setText(BTN_ACTIVE_CONFIG);
                             btnActive.setVisibility(View.VISIBLE);
@@ -260,8 +292,9 @@ public class SplashActivity extends BaseActivity {
                     toActiveActivity();
                     break;
                 case BTN_ACTIVE_RETRY://重试
-                    //检测直播服务
-                    checkLiveServer();
+                    //检测服务状态
+                    dialog.show();
+                    checkServer();
                     break;
                 case BTN_ACTIVE_CONFIG://前往配置
                     toActiveActivity();
@@ -296,7 +329,10 @@ public class SplashActivity extends BaseActivity {
                     @Override
                     public void onNext(Integer activeCode) {
                         if (activeCode == ErrorInfo.MOK || activeCode == ErrorInfo.MERR_ASF_ALREADY_ACTIVATED) {
-                            startActivity(new Intent(SplashActivity.this, MainActivity.class));
+                            List<Config> configList = netConfigBox.getAll();
+                            Intent intent = new Intent(SplashActivity.this, MainActivity.class);
+                            intent.putParcelableArrayListExtra("config", (ArrayList<? extends Parcelable>) configList);
+                            startActivity(intent);
                             SplashActivity.this.finish();
                         } else {
                             String text = "人脸识别引擎未激活" + activeCode;
