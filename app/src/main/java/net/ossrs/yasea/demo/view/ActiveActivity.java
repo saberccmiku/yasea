@@ -25,6 +25,7 @@ import android.widget.Toast;
 
 import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
+import com.google.gson.Gson;
 
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.adapter.CommonRecyclerAdapter;
@@ -33,6 +34,8 @@ import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
+import net.ossrs.yasea.demo.bean.equipment.ServerInfo;
+import net.ossrs.yasea.demo.bean.equipment.ThWindowInfo;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
@@ -51,6 +54,7 @@ import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
+import io.socket.client.Socket;
 
 public class ActiveActivity extends BaseActivity {
 
@@ -58,6 +62,7 @@ public class ActiveActivity extends BaseActivity {
     private CommonRecyclerAdapter<Config> adapter;
     private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
     private LoadingDialog dialog;
+    private ServerInfo serverInfo;
     private static final String[] NEEDED_PERMISSIONS = new String[]{
             Manifest.permission.CAMERA,
             Manifest.permission.READ_PHONE_STATE
@@ -127,10 +132,13 @@ public class ActiveActivity extends BaseActivity {
                     Drawable drawable = getResources().getDrawable(R.drawable.ic_search, null);
                     drawable.setBounds(0, 0, drawable.getMinimumWidth(), drawable.getMinimumHeight());
                     editText.setCompoundDrawables(null, null, drawable, null);
-                    editText.setEnabled(false);
-                    editText.setOnClickListener(v -> {
-                        checkCenterServer();
-                    });
+
+                    //设置editText可点击不可编辑
+                    editText.setCursorVisible(false);
+                    editText.setFocusable(false);
+                    editText.setFocusableInTouchMode(false);
+
+                    editText.setOnClickListener(v -> checkCenterServerAndSelectStation());
                 }
             }
         };
@@ -225,6 +233,7 @@ public class ActiveActivity extends BaseActivity {
 
                     @Override
                     public void onNext(Integer activeCode) {
+                        dialog.cancel();
                         String ivStatusText;
                         String tvEquipmentStatusText;
                         if (activeCode == ErrorInfo.MOK) {
@@ -325,7 +334,7 @@ public class ActiveActivity extends BaseActivity {
             @SuppressLint("HardwareIds") String serial = (String) (get.invoke(c, "ro.serialno", "unknown"));
             configList.add(new Config(ConfigPattern.LOCAL, 3));
             configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.SERIAL, serial, 1));
-            configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.STATION, "15368", 2));
+            configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.STATION, null, 2));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -422,6 +431,113 @@ public class ActiveActivity extends BaseActivity {
                         } else {
                             dialog.cancel();
                             btnOperate.setClickable(true);
+                            Toast.makeText(ActiveActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
+                        }
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+
+    }
+
+    /**
+     * 检查数据解析服务系统
+     */
+    private void checkCenterServerAndSelectStation() {
+        dialog.show();
+        Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+            serverInfo = new ServerInfo();
+            for (Config config : configList) {
+                if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.NETWORK)) {
+                    switch (config.getLabel()) {
+                        case ConfigPattern.SERVER:
+                            serverInfo.setIp(config.getInput());
+                            break;
+                        case ConfigPattern.PORT:
+                            serverInfo.setPort(Integer.valueOf(config.getInput()));
+                            break;
+                        case ConfigPattern.SERIAL:
+                            serverInfo.setSerial(config.getInput());
+                            break;
+                    }
+                } else if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.LOCAL)) {
+                    if (ConfigPattern.SERIAL.equals(config.getLabel())) {
+                        serverInfo.setSerial(config.getInput());
+                    }
+                }
+            }
+            emitter.onNext(net.ossrs.yasea.demo.util.CommonUtil.testServerConnect(serverInfo.getIp(), serverInfo.getPort()));
+        }).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Boolean>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(Boolean aBoolean) {
+                        if (aBoolean) {
+                            String socketUrl = "http://" + serverInfo.getIp() + ":" + serverInfo.getPort();
+                            Socket socketIO = getSocketIO(socketUrl);
+                            socketIO.connect();
+                            Gson gson = new Gson();
+                            String s = gson.toJson(serverInfo);
+                            socketIO.emit("station", s);
+                            socketIO.on("station", args -> {
+                                Observable.create((ObservableOnSubscribe<ThWindowInfo>) emitter ->
+                                        emitter.onNext(gson.fromJson(args[0].toString(), ThWindowInfo.class))
+                                ).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+                                        .subscribe(new Observer<ThWindowInfo>() {
+                                            @Override
+                                            public void onSubscribe(Disposable d) {
+
+                                            }
+
+                                            @Override
+                                            public void onNext(ThWindowInfo thWindowInfo) {
+                                                dialog.cancel();
+//                                                for (Config config : configList) {
+//                                                    if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
+//                                                        config.setInput(thWindowInfo.getName());
+//                                                        adapter.notifyDataSetChanged();
+//                                                        return;
+//                                                    }
+//                                                }
+                                                for (int i = 0; i < configList.size(); i++) {
+                                                    Config config = configList.get(i);
+                                                    if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
+                                                        config.setInput(thWindowInfo.getName());
+                                                        adapter.notifyItemChanged(i);
+                                                        return;
+                                                    }
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onError(Throwable e) {
+
+                                            }
+
+                                            @Override
+                                            public void onComplete() {
+
+                                            }
+                                        });
+
+                            });
+
+                        } else {
+                            dialog.cancel();
                             Toast.makeText(ActiveActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
                         }
 
