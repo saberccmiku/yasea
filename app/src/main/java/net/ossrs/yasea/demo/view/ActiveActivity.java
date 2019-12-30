@@ -70,6 +70,8 @@ public class ActiveActivity extends BaseActivity {
 
     private final String TAG = ActiveActivity.class.getName();
 
+    private Socket socketIO;
+
     @BindView(R.id.rv_active)
     RecyclerView rvActive;
     @BindView(R.id.btn_operate)
@@ -108,10 +110,14 @@ public class ActiveActivity extends BaseActivity {
                     holder.getView(R.id.et_input).setVisibility(View.GONE);
                 }
                 holder.setText(R.id.tv_label, config.getLabel());
-                holder.setEditText(R.id.et_input, config.getInput());
+                //holder.setEditText(R.id.et_input, config.getInput());
                 //为EditText设置监听事件，保存修改后的属性值
                 EditText editText = holder.getView(R.id.et_input);
-                editText.addTextChangedListener(new TextWatcher() {
+                if (editText.getTag() instanceof TextWatcher) {
+                    editText.removeTextChangedListener((TextWatcher) editText.getTag());
+                }
+                editText.setText(config.getInput());
+                TextWatcher textWatcher = new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -126,7 +132,7 @@ public class ActiveActivity extends BaseActivity {
                     public void afterTextChanged(Editable s) {
                         config.setInput(s.toString());
                     }
-                });
+                };
                 //工位号手动检测按钮
                 if (config.getLabel().equals(ConfigPattern.STATION)) {
                     Drawable drawable = getResources().getDrawable(R.drawable.ic_search, null);
@@ -140,6 +146,8 @@ public class ActiveActivity extends BaseActivity {
 
                     editText.setOnClickListener(v -> checkCenterServerAndSelectStation());
                 }
+                editText.addTextChangedListener(textWatcher);
+                editText.setTag(textWatcher);
             }
         };
         rvActive.setAdapter(adapter);
@@ -488,8 +496,9 @@ public class ActiveActivity extends BaseActivity {
                     public void onNext(Boolean aBoolean) {
                         if (aBoolean) {
                             String socketUrl = "http://" + serverInfo.getIp() + ":" + serverInfo.getPort();
-                            Socket socketIO = getSocketIO(socketUrl);
-                            socketIO.connect();
+                            if (socketIO == null) {
+                                socketIO = getSocketIO(socketUrl);
+                            }
                             Gson gson = new Gson();
                             String s = gson.toJson(serverInfo);
                             socketIO.emit("station", s);
@@ -506,26 +515,25 @@ public class ActiveActivity extends BaseActivity {
                                             @Override
                                             public void onNext(ThWindowInfo thWindowInfo) {
                                                 dialog.cancel();
-//                                                for (Config config : configList) {
-//                                                    if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
-//                                                        config.setInput(thWindowInfo.getName());
-//                                                        adapter.notifyDataSetChanged();
-//                                                        return;
-//                                                    }
-//                                                }
-                                                for (int i = 0; i < configList.size(); i++) {
-                                                    Config config = configList.get(i);
-                                                    if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
-                                                        config.setInput(thWindowInfo.getName());
-                                                        adapter.notifyItemChanged(i);
-                                                        return;
+                                                if (thWindowInfo != null && !TextUtils.isEmpty(thWindowInfo.getName())) {
+                                                    for (Config config : configList) {
+                                                        if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
+                                                            config.setInput(thWindowInfo.getName());
+                                                            break;
+                                                        }
                                                     }
+
+                                                    adapter.notifyDataSetChanged();
+                                                } else {
+                                                    Toast.makeText(ActiveActivity.this, ResCode.NOT_FOUND_STATION.getMsg(), Toast.LENGTH_SHORT).show();
                                                 }
                                             }
 
                                             @Override
                                             public void onError(Throwable e) {
-
+                                                socketIO.off();
+                                                socketIO.disconnect();
+                                                dialog.cancel();
                                             }
 
                                             @Override
@@ -556,4 +564,13 @@ public class ActiveActivity extends BaseActivity {
 
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (socketIO != null) {
+            socketIO.off();
+            socketIO.disconnect();
+        }
+
+    }
 }

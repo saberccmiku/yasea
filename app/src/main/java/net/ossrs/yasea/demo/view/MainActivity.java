@@ -36,6 +36,7 @@ import com.arcsoft.face.GenderInfo;
 import com.arcsoft.face.LivenessInfo;
 import com.arcsoft.face.VersionInfo;
 import com.github.faucamp.simplertmp.RtmpHandler;
+import com.google.gson.Gson;
 import com.seu.magicfilter.utils.MagicFilterType;
 
 import net.ossrs.yasea.SrsCameraView;
@@ -49,6 +50,9 @@ import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
+import net.ossrs.yasea.demo.bean.equipment.FaceFeatureInfo;
+import net.ossrs.yasea.demo.bean.equipment.ServerInfo;
+import net.ossrs.yasea.demo.bean.equipment.ThWindowInfo;
 import net.ossrs.yasea.demo.faceserver.CompareResult;
 import net.ossrs.yasea.demo.faceserver.FaceServer;
 import net.ossrs.yasea.demo.util.ConfigUtil;
@@ -77,13 +81,14 @@ import java.util.concurrent.TimeUnit;
 import butterknife.BindView;
 import butterknife.OnClick;
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -101,7 +106,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private Button btnRecord;
     private Button btnSwitchEncoder;
     private Button btnPause;
-    private String rtmpUrl;
+    private String rtmpUrl;//直播服务
+    private ServerInfo networkServerInfo;//云服务
     private String recPath = Environment.getExternalStorageDirectory().getPath() + "/test.mp4";
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
@@ -147,6 +153,10 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private ConcurrentHashMap<Integer, Integer> requestFeatureStatusMap = new ConcurrentHashMap<>();
     private Camera.Size previewSize;
     private ShowFaceInfoAdapter adapter;
+    /**
+     * 服务通信服务
+     */
+    private Socket socketIO;
 
 
     @Override
@@ -266,6 +276,11 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             getFeatureDelayedDisposables.clear();
         }
         FaceServer.getInstance().unInit();
+
+        if (socketIO!=null){
+            socketIO.off();
+            socketIO.disconnect();
+        }
         super.onDestroy();
 
     }
@@ -395,24 +410,31 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private void findLocalConfig() {
         Intent intent = getIntent();
         ArrayList<Config> configList = intent.getParcelableArrayListExtra("config");
-        String ip = null;
-        String port = "0";
+        String monitorIp = null;
+        String monitorPort = "0";
         String station = "0";
         for (Config config : configList) {
             if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.MONITOR)) {
                 if (config.getLabel().equals(ConfigPattern.SERVER)) {
-                    ip = config.getInput();
+                    monitorIp = config.getInput();
                 } else if (config.getLabel().equals(ConfigPattern.PORT)) {
-                    port = config.getInput();
+                    monitorPort = config.getInput();
                 }
             } else if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.LOCAL)) {
                 if (config.getLabel().equals(ConfigPattern.STATION)) {
                     station = config.getInput();
                 }
+            } else if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.NETWORK)) {
+                networkServerInfo = new ServerInfo();
+                if (config.getLabel().equals(ConfigPattern.SERVER)) {
+                    networkServerInfo.setIp(config.getInput());
+                } else if (config.getLabel().equals(ConfigPattern.PORT)) {
+                    networkServerInfo.setPort(Integer.valueOf(config.getInput()));
+                }
             }
         }
 
-        rtmpUrl = "rtmp://" + ip + "/hls/test";
+        rtmpUrl = "rtmp://" + monitorIp + "/hls/test";
         tvWorkstation.setText(station);
     }
 
@@ -768,12 +790,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             }
                             if (mainActivity.registerStatus == REGISTER_STATUS_READY && facePreviewInfoList != null && facePreviewInfoList.size() > 0) {
                                 mainActivity.registerStatus = REGISTER_STATUS_PROCESSING;
-                                Observable.create(new ObservableOnSubscribe<Boolean>() {
-                                    @Override
-                                    public void subscribe(ObservableEmitter<Boolean> emitter) {
-                                        boolean success = FaceServer.getInstance().register(mainActivity, data.clone(), mainActivity.previewSize.width, mainActivity.previewSize.height, "registered " + mainActivity.faceHelper.getCurrentTrackId());
-                                        emitter.onNext(success);
-                                    }
+                                Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+                                    boolean success = FaceServer.getInstance().register(mainActivity, data.clone(), mainActivity.previewSize.width, mainActivity.previewSize.height, "registered " + mainActivity.faceHelper.getCurrentTrackId());
+                                    emitter.onNext(success);
                                 })
                                         .subscribeOn(Schedulers.computation())
                                         .observeOn(AndroidSchedulers.mainThread())
@@ -817,7 +836,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                                     if (mainActivity.requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == null
                                             || mainActivity.requestFeatureStatusMap.get(facePreviewInfoList.get(i).getTrackId()) == RequestFeatureStatus.FAILED) {
                                         mainActivity.requestFeatureStatusMap.put(facePreviewInfoList.get(i).getTrackId(), RequestFeatureStatus.SEARCHING);
-                                        mainActivity.faceHelper.requestFaceFeature(data, facePreviewInfoList.get(i).getFaceInfo(), mainActivity.previewSize.width, mainActivity.previewSize.height, FaceEngine.CP_PAF_NV21, facePreviewInfoList.get(i).getTrackId());
+                                        mainActivity.faceHelper.requestFaceFeature(data, facePreviewInfoList.get(i).getFaceInfo(),
+                                                mainActivity.previewSize.width, mainActivity.previewSize.height,
+                                                FaceEngine.CP_PAF_NV21, facePreviewInfoList.get(i).getTrackId());
 //                            Log.i(TAG, "onPreview: fr start = " + System.currentTimeMillis() + " trackId = " + facePreviewInfoList.get(i).getTrackId());
                                     }
                                 }
@@ -898,7 +919,13 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     CompareResult compareResult = FaceServer.getInstance().getTopOfFaceLib(frFace);
                     Log.i(TAG, "subscribe: fr search end = " + System.currentTimeMillis() + " trackId = " + requestId);
                     if (compareResult == null) {
-                        emitter.onError(null);
+                        //从远程服务获取特征信息
+                        CompareResult serverCompareResult = searchFromLib(frFace);
+                        if (serverCompareResult == null) {
+                            emitter.onError(null);
+                        } else {
+                            emitter.onNext(compareResult);
+                        }
                     } else {
                         emitter.onNext(compareResult);
                     }
@@ -964,6 +991,34 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     }
                 });
     }
+
+
+    /**
+     * 在特征库中搜索
+     *
+     * @param faceFeature 传入特征数据
+     * @return 比对结果
+     */
+    public CompareResult searchFromLib(FaceFeature faceFeature) {
+        //本地库中不存在该人脸，请求服务器进行比对，比对成功后将人脸信息返回到本地存储
+        String faceFeatureCode = Base64.encodeToString(faceFeature.getFeatureData(), Base64.DEFAULT);
+        String socketUrl = "http://" + networkServerInfo.getIp() + ":" + networkServerInfo.getPort();
+        if (socketIO == null) {
+            synchronized (socketIO) {
+                socketIO = getSocketIO(socketUrl);
+                socketIO.emit("face", faceFeatureCode);
+                socketIO.on("face", new Emitter.Listener() {
+                    @Override
+                    public void call(Object... args) {
+                        Gson gson = new Gson();
+                        FaceFeatureInfo faceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
+                    }
+                });
+            }
+        }
+        return null;
+    }
+
 
     /**
      * 在特征库中搜索

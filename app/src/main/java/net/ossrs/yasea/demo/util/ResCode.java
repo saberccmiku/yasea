@@ -13,7 +13,8 @@ public enum ResCode {
     INCOMPLETE_INFORMATION(205, "信息不全"),
     ACTIVE_SUCCESS(206, "激活成功"),
     ACTIVE_ERROR(207, "激活失败"),
-    ACTIVATED(208, "已激活");
+    ACTIVATED(208, "已激活"),
+    NOT_FOUND_STATION(209, "未找到与该设备相匹配的工位信息");
 
     // 成员变量
     private Integer code;
