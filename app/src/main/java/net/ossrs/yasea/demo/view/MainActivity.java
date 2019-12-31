@@ -52,6 +52,7 @@ import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
 import net.ossrs.yasea.demo.bean.equipment.FaceFeatureInfo;
 import net.ossrs.yasea.demo.bean.equipment.ServerInfo;
+import net.ossrs.yasea.demo.bean.equipment.ThWindowStatus;
 import net.ossrs.yasea.demo.faceserver.CompareResult;
 import net.ossrs.yasea.demo.faceserver.FaceServer;
 import net.ossrs.yasea.demo.util.ConfigUtil;
@@ -913,6 +914,29 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             }
         }
 
+    }
+
+    /**
+     * 上传检测状态到服务器
+     * 坐席状态（0离线1在线2人脸不匹配3异常）
+     */
+    public void sendStatusToServer(int status){
+        String socketUrl = "http://" + networkServerInfo.getIp() + ":" + networkServerInfo.getPort();
+        ThWindowStatus thWindowStatus = new ThWindowStatus();
+        thWindowStatus.setDevCode("");
+        thWindowStatus.setAddress(rtmpUrl);
+        thWindowStatus.setStatus(status);
+        thWindowStatus.setDevCode("");
+        if (socketIO == null) {
+            socketIO = getSocketIO(socketUrl);
+            synchronized (socketIO) {
+                socketIO.emit("sendStatusToServer", "");
+                socketIO.on("face", args -> {
+                    Gson gson = new Gson();
+                    FaceFeatureInfo faceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
+                });
+            }
+        }
     }
 
 
