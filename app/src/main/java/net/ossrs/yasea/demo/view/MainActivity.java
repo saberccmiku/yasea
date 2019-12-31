@@ -52,7 +52,6 @@ import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
 import net.ossrs.yasea.demo.bean.equipment.FaceFeatureInfo;
 import net.ossrs.yasea.demo.bean.equipment.ServerInfo;
-import net.ossrs.yasea.demo.bean.equipment.ThWindowInfo;
 import net.ossrs.yasea.demo.faceserver.CompareResult;
 import net.ossrs.yasea.demo.faceserver.FaceServer;
 import net.ossrs.yasea.demo.util.ConfigUtil;
@@ -277,7 +276,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         }
         FaceServer.getInstance().unInit();
 
-        if (socketIO!=null){
+        if (socketIO != null) {
             socketIO.off();
             socketIO.disconnect();
         }
@@ -1003,16 +1002,16 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         //本地库中不存在该人脸，请求服务器进行比对，比对成功后将人脸信息返回到本地存储
         String faceFeatureCode = Base64.encodeToString(faceFeature.getFeatureData(), Base64.DEFAULT);
         String socketUrl = "http://" + networkServerInfo.getIp() + ":" + networkServerInfo.getPort();
+        System.out.println("--------socketIO--------");
+        System.out.println(socketIO);
+        System.out.println("---------socketIO-------");
         if (socketIO == null) {
+            socketIO = getSocketIO(socketUrl);
             synchronized (socketIO) {
-                socketIO = getSocketIO(socketUrl);
                 socketIO.emit("face", faceFeatureCode);
-                socketIO.on("face", new Emitter.Listener() {
-                    @Override
-                    public void call(Object... args) {
-                        Gson gson = new Gson();
-                        FaceFeatureInfo faceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
-                    }
+                socketIO.on("face", args -> {
+                    Gson gson = new Gson();
+                    FaceFeatureInfo faceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
                 });
             }
         }

@@ -26,12 +26,14 @@ import android.widget.Toast;
 import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.adapter.CommonRecyclerAdapter;
 import net.ossrs.yasea.demo.adapter.CommonRecyclerViewHolder;
 import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
+import net.ossrs.yasea.demo.bean.Result;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
 import net.ossrs.yasea.demo.bean.equipment.ServerInfo;
@@ -42,6 +44,7 @@ import net.ossrs.yasea.demo.util.permission.CommonUtil;
 import net.ossrs.yasea.demo.widget.LoadingDialog;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -502,47 +505,49 @@ public class ActiveActivity extends BaseActivity {
                             Gson gson = new Gson();
                             String s = gson.toJson(serverInfo);
                             socketIO.emit("station", s);
-                            socketIO.on("station", args -> {
-                                Observable.create((ObservableOnSubscribe<ThWindowInfo>) emitter ->
-                                        emitter.onNext(gson.fromJson(args[0].toString(), ThWindowInfo.class))
-                                ).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-                                        .subscribe(new Observer<ThWindowInfo>() {
-                                            @Override
-                                            public void onSubscribe(Disposable d) {
+                            socketIO.on("station", args -> Observable.create((ObservableOnSubscribe<Result<ThWindowInfo>>) emitter ->
+                                    {
+                                        Type type = new TypeToken<Result<ThWindowInfo>>() {
+                                        }.getType();
+                                        Result<ThWindowInfo> result = gson.fromJson(args[0].toString(), type);
+                                        emitter.onNext(result);
+                                    }
+                            ).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+                                    .subscribe(new Observer<Result<ThWindowInfo>>() {
+                                        @Override
+                                        public void onSubscribe(Disposable d) {
 
-                                            }
+                                        }
 
-                                            @Override
-                                            public void onNext(ThWindowInfo thWindowInfo) {
-                                                dialog.cancel();
-                                                if (thWindowInfo != null && !TextUtils.isEmpty(thWindowInfo.getName())) {
-                                                    for (Config config : configList) {
-                                                        if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
-                                                            config.setInput(thWindowInfo.getName());
-                                                            break;
-                                                        }
+                                        @Override
+                                        public void onNext(Result<ThWindowInfo> result) {
+                                            dialog.cancel();
+                                            if (result != null && result.getCode().equals(200) && !TextUtils.isEmpty(result.getData().getName())) {
+                                                for (Config config : configList) {
+                                                    if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
+                                                        config.setInput(result.getData().getName());
+                                                        break;
                                                     }
-
-                                                    adapter.notifyDataSetChanged();
-                                                } else {
-                                                    Toast.makeText(ActiveActivity.this, ResCode.NOT_FOUND_STATION.getMsg(), Toast.LENGTH_SHORT).show();
                                                 }
+
+                                                adapter.notifyDataSetChanged();
+                                            } else {
+                                                Toast.makeText(ActiveActivity.this, ResCode.NOT_FOUND_STATION.getMsg(), Toast.LENGTH_SHORT).show();
                                             }
+                                        }
 
-                                            @Override
-                                            public void onError(Throwable e) {
-                                                socketIO.off();
-                                                socketIO.disconnect();
-                                                dialog.cancel();
-                                            }
+                                        @Override
+                                        public void onError(Throwable e) {
+                                            socketIO.off();
+                                            socketIO.disconnect();
+                                            dialog.cancel();
+                                        }
 
-                                            @Override
-                                            public void onComplete() {
+                                        @Override
+                                        public void onComplete() {
 
-                                            }
-                                        });
-
-                            });
+                                        }
+                                    }));
 
                         } else {
                             dialog.cancel();
