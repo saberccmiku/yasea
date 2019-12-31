@@ -87,7 +87,6 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -779,13 +778,19 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             }
                             List<FacePreviewInfo> facePreviewInfoList = mainActivity.faceHelper.onPreviewFrame(data);
                             if (facePreviewInfoList != null && mainActivity.faceRectView != null && mainActivity.drawHelper != null) {
-                                List<DrawInfo> drawInfoList = new ArrayList<>();
-                                for (int i = 0; i < facePreviewInfoList.size(); i++) {
-                                    String name = mainActivity.faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
-                                    drawInfoList.add(new DrawInfo(facePreviewInfoList.get(i).getFaceInfo().getRect(), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE, LivenessInfo.UNKNOWN,
-                                            name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
-                                }
-                                mainActivity.drawHelper.draw(mainActivity.faceRectView, drawInfoList);
+                               if (facePreviewInfoList.size()!=0) {
+                                   List<DrawInfo> drawInfoList = new ArrayList<>();
+                                   for (int i = 0; i < facePreviewInfoList.size(); i++) {
+                                       String name = mainActivity.faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
+                                       drawInfoList.add(new DrawInfo(facePreviewInfoList.get(i).getFaceInfo().getRect(), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE, LivenessInfo.UNKNOWN,
+                                               name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
+                                   }
+                                   mainActivity.drawHelper.draw(mainActivity.faceRectView, drawInfoList);
+                               }else {
+                                   mainActivity.tvOnline.setText("直播中/离线(未捕捉到有效数据)");
+                               }
+                            } else {
+                                mainActivity.tvOnline.setText("直播中/离线(程序异常)");
                             }
                             if (mainActivity.registerStatus == REGISTER_STATUS_READY && facePreviewInfoList != null && facePreviewInfoList.size() > 0) {
                                 mainActivity.registerStatus = REGISTER_STATUS_PROCESSING;
@@ -941,7 +946,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     public void onNext(CompareResult compareResult) {
                         if (compareResult == null || compareResult.getUserName() == null) {
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
-                            faceHelper.addName(requestId, "VISITOR " + requestId);
+                            faceHelper.addName(requestId, "来访者人脸不匹配 " + requestId);
                             return;
                         }
 
@@ -950,7 +955,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             boolean isAdded = false;
                             if (compareResultList == null) {
                                 requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
-                                faceHelper.addName(requestId, "VISITOR " + requestId);
+                                faceHelper.addName(requestId, "来访者人脸不匹配 " + requestId);
+                                String text = "直播中/离线(来访者信息不匹配)";
+                                tvOnline.setText(text);
                                 return;
                             }
                             for (CompareResult compareResult1 : compareResultList) {
@@ -966,6 +973,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                                     adapter.notifyItemRemoved(0);
                                 }
                                 //添加显示人员时，保存其trackId
+                                String text = "直播中/在线";
+                                tvOnline.setText(text);
                                 compareResult.setTrackId(requestId);
                                 compareResultList.add(compareResult);
                                 adapter.notifyItemInserted(compareResultList.size() - 1);
@@ -975,12 +984,16 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
                         } else {
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
-                            faceHelper.addName(requestId, "VISITOR " + requestId);
+                            faceHelper.addName(requestId, "来访者人脸不匹配 " + requestId);
+                            String text = "直播中/离线(来访者信息不匹配)";
+                            tvOnline.setText(text);
                         }
                     }
 
                     @Override
                     public void onError(Throwable e) {
+                        String text = "直播中/离线(未识别到有效信息)";
+                        tvOnline.setText(text);
                         requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
                     }
 
