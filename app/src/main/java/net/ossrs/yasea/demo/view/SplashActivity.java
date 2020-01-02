@@ -76,7 +76,7 @@ public class SplashActivity extends BaseActivity {
             @Override
             public void permissionGranted(@NonNull String[] permissions) {
 
-                dialog = new LoadingDialog(SplashActivity.this,R.style.mdialog);
+                dialog = new LoadingDialog(SplashActivity.this, R.style.mdialog);
                 dialog.show();
 
 
@@ -328,6 +328,7 @@ public class SplashActivity extends BaseActivity {
 
                     @Override
                     public void onNext(Integer activeCode) {
+                        dialog.cancel();
                         if (activeCode == ErrorInfo.MOK || activeCode == ErrorInfo.MERR_ASF_ALREADY_ACTIVATED) {
                             List<Config> configList = netConfigBox.getAll();
                             Intent intent = new Intent(SplashActivity.this, MainActivity.class);
@@ -353,5 +354,13 @@ public class SplashActivity extends BaseActivity {
                     }
                 });
 
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (dialog != null) {
+            dialog.cancel();
+        }
+        super.onDestroy();
     }
 }

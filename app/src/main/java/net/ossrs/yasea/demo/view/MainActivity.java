@@ -1,6 +1,5 @@
 package net.ossrs.yasea.demo.view;
 
-import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
@@ -12,7 +11,6 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -44,15 +42,14 @@ import net.ossrs.yasea.SrsEncodeHandler;
 import net.ossrs.yasea.SrsPublisher;
 import net.ossrs.yasea.SrsRecordHandler;
 import net.ossrs.yasea.demo.R;
+import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
-import net.ossrs.yasea.demo.bean.equipment.Config;
-import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
+import net.ossrs.yasea.demo.bean.equipment.BaseConfig;
 import net.ossrs.yasea.demo.bean.equipment.FaceFeatureInfo;
-import net.ossrs.yasea.demo.bean.equipment.ServerInfo;
-import net.ossrs.yasea.demo.bean.equipment.ThWindowStatus;
+import net.ossrs.yasea.demo.bean.equipment.WindowInfo;
 import net.ossrs.yasea.demo.faceserver.CompareResult;
 import net.ossrs.yasea.demo.faceserver.FaceServer;
 import net.ossrs.yasea.demo.util.ConfigUtil;
@@ -80,6 +77,7 @@ import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.OnClick;
+import io.objectbox.Box;
 import io.reactivex.Observable;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
@@ -106,7 +104,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private Button btnSwitchEncoder;
     private Button btnPause;
     private String rtmpUrl;//直播服务
-    private ServerInfo networkServerInfo;//云服务
+    private BaseConfig baseConfig;//所有配置信息
     private String recPath = Environment.getExternalStorageDirectory().getPath() + "/test.mp4";
     private SrsPublisher mPublisher;
     private SrsCameraView mCameraView;
@@ -156,6 +154,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      * 服务通信服务
      */
     private Socket socketIO;
+    private Integer FACE_STATUS = 0;//0离线中1工作中2闲置中3人脸不匹配4异常
+    private Integer TEMP_FACE_STATUS = -1;//用来标记上传服务器的状态，以免频繁发送请求
 
 
     @Override
@@ -258,6 +258,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             synchronized (mPublisher) {
                 mPublisher.stopPublish();
                 mPublisher.stopRecord();
+                //告诉服务器直播关了
+                FACE_STATUS = 0;
+                updateRecord(FACE_STATUS);
             }
         }
         //faceHelper中可能会有FR耗时操作仍在执行，加锁防止crash
@@ -407,34 +410,19 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     }
 
     private void findLocalConfig() {
-        Intent intent = getIntent();
-        ArrayList<Config> configList = intent.getParcelableArrayListExtra("config");
-        String monitorIp = null;
-        String monitorPort = "0";
-        String station = "0";
-        for (Config config : configList) {
-            if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.MONITOR)) {
-                if (config.getLabel().equals(ConfigPattern.SERVER)) {
-                    monitorIp = config.getInput();
-                } else if (config.getLabel().equals(ConfigPattern.PORT)) {
-                    monitorPort = config.getInput();
-                }
-            } else if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.LOCAL)) {
-                if (config.getLabel().equals(ConfigPattern.STATION)) {
-                    station = config.getInput();
-                }
-            } else if (!TextUtils.isEmpty(config.getTitle()) && config.getTitle().equals(ConfigPattern.NETWORK)) {
-                networkServerInfo = new ServerInfo();
-                if (config.getLabel().equals(ConfigPattern.SERVER)) {
-                    networkServerInfo.setIp(config.getInput());
-                } else if (config.getLabel().equals(ConfigPattern.PORT)) {
-                    networkServerInfo.setPort(Integer.valueOf(config.getInput()));
-                }
+
+        Box<BaseConfig> baseConfigBox = IApplication.boxStore.boxFor(BaseConfig.class);
+        List<BaseConfig> baseConfigBoxList = baseConfigBox.getAll();
+        baseConfig = baseConfigBoxList.get(0);
+        rtmpUrl = "rtmp://" + baseConfig.getMonitorIp() + "/hls/" + baseConfig.getLocalSerial();
+        tvWorkstation.setText(baseConfig.getLocalStation());
+        //链接中央服务的socket
+        String socketUrl = "http://" + baseConfig.getNetworkIp() + ":" + baseConfig.getNetworkPort();
+        if (socketIO == null) {
+            synchronized (MainActivity.class) {
+                socketIO = getSocketIO(socketUrl);
             }
         }
-
-        rtmpUrl = "rtmp://" + monitorIp + "/hls/test";
-        tvWorkstation.setText(station);
     }
 
     @BindView(R.id.ll_video_btn)
@@ -484,6 +472,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             tvOnline.setText("离线中");
             topDrawable = getResources().getDrawable(R.drawable.ic_outline, null);
             tvOnlineStatus.setText("上线");
+            //告诉服务器直播关了
+            FACE_STATUS = 0;
+            updateRecord(FACE_STATUS);
         }
 
         //设置上下线按钮
@@ -524,6 +515,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 btnSwitchEncoder.setEnabled(false);
                 btnPause.setEnabled(true);
             } else if (btnPublish.getText().toString().contentEquals("stop")) {
+                //告诉服务器直播关了
+                FACE_STATUS = 0;
+                updateRecord(FACE_STATUS);
                 mPublisher.stopPublish();
                 mPublisher.stopRecord();
                 btnPublish.setText("publish");
@@ -779,18 +773,22 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             }
                             List<FacePreviewInfo> facePreviewInfoList = mainActivity.faceHelper.onPreviewFrame(data);
                             if (facePreviewInfoList != null && mainActivity.faceRectView != null && mainActivity.drawHelper != null) {
-                               if (facePreviewInfoList.size()!=0) {
-                                   List<DrawInfo> drawInfoList = new ArrayList<>();
-                                   for (int i = 0; i < facePreviewInfoList.size(); i++) {
-                                       String name = mainActivity.faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
-                                       drawInfoList.add(new DrawInfo(facePreviewInfoList.get(i).getFaceInfo().getRect(), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE, LivenessInfo.UNKNOWN,
-                                               name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
-                                   }
-                                   mainActivity.drawHelper.draw(mainActivity.faceRectView, drawInfoList);
-                               }else {
-                                   mainActivity.tvOnline.setText("直播中/离线(未捕捉到有效数据)");
-                               }
+                                if (facePreviewInfoList.size() != 0) {
+                                    List<DrawInfo> drawInfoList = new ArrayList<>();
+                                    for (int i = 0; i < facePreviewInfoList.size(); i++) {
+                                        String name = mainActivity.faceHelper.getName(facePreviewInfoList.get(i).getTrackId());
+                                        drawInfoList.add(new DrawInfo(facePreviewInfoList.get(i).getFaceInfo().getRect(), GenderInfo.UNKNOWN, AgeInfo.UNKNOWN_AGE, LivenessInfo.UNKNOWN,
+                                                name == null ? String.valueOf(facePreviewInfoList.get(i).getTrackId()) : name));
+                                    }
+                                    mainActivity.drawHelper.draw(mainActivity.faceRectView, drawInfoList);
+                                } else {
+                                    mainActivity.FACE_STATUS = 2;
+                                    mainActivity.updateRecord(mainActivity.FACE_STATUS);
+                                    mainActivity.tvOnline.setText("直播中/闲置中");
+                                }
                             } else {
+                                mainActivity.FACE_STATUS = 4;
+                                mainActivity.updateRecord(mainActivity.FACE_STATUS);
                                 mainActivity.tvOnline.setText("直播中/离线(程序异常)");
                             }
                             if (mainActivity.registerStatus == REGISTER_STATUS_READY && facePreviewInfoList != null && facePreviewInfoList.size() > 0) {
@@ -844,23 +842,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                                         mainActivity.faceHelper.requestFaceFeature(data, facePreviewInfoList.get(i).getFaceInfo(),
                                                 mainActivity.previewSize.width, mainActivity.previewSize.height,
                                                 FaceEngine.CP_PAF_NV21, facePreviewInfoList.get(i).getTrackId());
-//                            Log.i(TAG, "onPreview: fr start = " + System.currentTimeMillis() + " trackId = " + facePreviewInfoList.get(i).getTrackId());
                                     }
                                 }
                             }
-                            //创建文件对象 通过cache目录
-                            //  YuvImage image = new YuvImage(data, ImageFormat.NV21,mPublisher.getEncoder().getOutputWidth(),mPublisher.getEncoder().getOutputHeight(),null);
-                        /*    faceInfoList.clear();
-                            detectFaces(data,FaceEngine.CP_PAF_NV21,faceInfoList);
-                            if(faceInfoList.size()>0){
-                                FaceFeature faceFeature = new FaceFeature();
-                                faceRecognizeRunnables.add(new FaceRecognizeRunnable(data, faceInfoList.get(0), mPublisher.getEncoder().getOutputWidth(), mPublisher.getEncoder().getOutputHeight(), FaceEngine.CP_PAF_NV21));
-                                executor.execute(faceRecognizeRunnables.poll());
-                            }else{
-                                compareResultList.clear();
-                                mAdapter.notifyDataSetChanged();
-                            }*/
-                            // fos.close();
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -920,22 +904,20 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      * 上传检测状态到服务器
      * 坐席状态（0离线1在线2人脸不匹配3异常）
      */
-    public void sendStatusToServer(int status){
-        String socketUrl = "http://" + networkServerInfo.getIp() + ":" + networkServerInfo.getPort();
-        ThWindowStatus thWindowStatus = new ThWindowStatus();
-        thWindowStatus.setDevCode("");
-        thWindowStatus.setAddress(rtmpUrl);
-        thWindowStatus.setStatus(status);
-        thWindowStatus.setDevCode("");
-        if (socketIO == null) {
-            socketIO = getSocketIO(socketUrl);
-            synchronized (socketIO) {
-                socketIO.emit("sendStatusToServer", "");
-                socketIO.on("face", args -> {
-                    Gson gson = new Gson();
-                    FaceFeatureInfo faceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
-                });
-            }
+    public void updateRecord(int status) {
+        //避免频繁发送同一状态给服务器，减少压力
+        if (status != TEMP_FACE_STATUS) {
+            TEMP_FACE_STATUS = status;
+            WindowInfo windowInfo = new WindowInfo();
+            windowInfo.setDevCode(baseConfig.getLocalSerial());
+            windowInfo.setAddress(rtmpUrl);
+            windowInfo.setStatus(status);
+            Gson gson = new Gson();
+            String windowInfoJson = gson.toJson(windowInfo);
+            socketIO.emit("updateRecord", windowInfoJson);
+            socketIO.on("updateRecord", args -> {
+                FaceFeatureInfo faceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
+            });
         }
     }
 
@@ -971,6 +953,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                         if (compareResult == null || compareResult.getUserName() == null) {
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
                             faceHelper.addName(requestId, "来访者人脸不匹配 " + requestId);
+                            FACE_STATUS = 3;
+                            updateRecord(FACE_STATUS);
                             return;
                         }
 
@@ -980,6 +964,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             if (compareResultList == null) {
                                 requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
                                 faceHelper.addName(requestId, "来访者人脸不匹配 " + requestId);
+                                FACE_STATUS = 3;
+                                updateRecord(FACE_STATUS);
                                 String text = "直播中/离线(来访者信息不匹配)";
                                 tvOnline.setText(text);
                                 return;
@@ -997,7 +983,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                                     adapter.notifyItemRemoved(0);
                                 }
                                 //添加显示人员时，保存其trackId
-                                String text = "直播中/在线";
+                                FACE_STATUS = 1;
+                                updateRecord(FACE_STATUS);
+                                String text = "直播中/工作中";
                                 tvOnline.setText(text);
                                 compareResult.setTrackId(requestId);
                                 compareResultList.add(compareResult);
@@ -1009,14 +997,17 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                         } else {
                             requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
                             faceHelper.addName(requestId, "来访者人脸不匹配 " + requestId);
+                            FACE_STATUS = 3;
+                            updateRecord(FACE_STATUS);
                             String text = "直播中/离线(来访者信息不匹配)";
                             tvOnline.setText(text);
                         }
+
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        String text = "直播中/离线(未识别到有效信息)";
+                        String text = "直播中/离线(" + e.getMessage() + ")";
                         tvOnline.setText(text);
                         requestFeatureStatusMap.put(requestId, RequestFeatureStatus.FAILED);
                     }
@@ -1037,21 +1028,13 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      */
     public CompareResult searchFromLib(FaceFeature faceFeature) {
         //本地库中不存在该人脸，请求服务器进行比对，比对成功后将人脸信息返回到本地存储
-        String faceFeatureCode = Base64.encodeToString(faceFeature.getFeatureData(), Base64.DEFAULT);
-        String socketUrl = "http://" + networkServerInfo.getIp() + ":" + networkServerInfo.getPort();
-        System.out.println("--------socketIO--------");
-        System.out.println(socketIO);
-        System.out.println("---------socketIO-------");
-        if (socketIO == null) {
-            socketIO = getSocketIO(socketUrl);
-            synchronized (socketIO) {
-                socketIO.emit("face", faceFeatureCode);
-                socketIO.on("face", args -> {
-                    Gson gson = new Gson();
-                    FaceFeatureInfo faceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
-                });
-            }
-        }
+//        String faceFeatureCode = Base64.encodeToString(faceFeature.getFeatureData(), Base64.DEFAULT);
+//        socketIO.emit("updateRecord", faceFeatureCode);
+//        socketIO.on("updateRecord", args -> {
+//            Gson gson = new Gson();
+//            FaceFeatureInfo faceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
+//        });
+
         return null;
     }
 

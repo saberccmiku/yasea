@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class ThWindowInfo {
+public class WindowInfo {
+
 
     /**
      * 主键唯一编码
@@ -46,5 +47,20 @@ public class ThWindowInfo {
      * 修改人
      */
     private String updateBy ;
+
+    /**
+     * 设备序列号
+     */
+    private String devCode ;
+
+    /**
+     * 人员状态
+     */
+    private Integer Status ;
+
+    /**
+     * 视屏地址
+     */
+    private String address ;
 
 }

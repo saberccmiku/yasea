@@ -5,7 +5,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.LinearLayoutManager;
@@ -34,10 +33,11 @@ import net.ossrs.yasea.demo.adapter.CommonRecyclerViewHolder;
 import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.Result;
+import net.ossrs.yasea.demo.bean.equipment.BaseConfig;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
 import net.ossrs.yasea.demo.bean.equipment.ServerInfo;
-import net.ossrs.yasea.demo.bean.equipment.ThWindowInfo;
+import net.ossrs.yasea.demo.bean.equipment.WindowInfo;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
@@ -93,6 +93,7 @@ public class ActiveActivity extends BaseActivity {
     TextView tvEquipmentStatus;
 
     private Box<Config> netConfigBox;
+    private Box<BaseConfig> baseConfigBox;
 
 
     @Override
@@ -171,10 +172,38 @@ public class ActiveActivity extends BaseActivity {
                         ActivityCompat.requestPermissions(ActiveActivity.this, NEEDED_PERMISSIONS, ACTION_REQUEST_PERMISSIONS);
                         return;
                     }
+                    BaseConfig baseConfig = new BaseConfig();
+                    for (Config config : configList) {
+                        if (!TextUtils.isEmpty(config.getTitle())) {
+                            switch (config.getTitle()) {
+                                case ConfigPattern.NETWORK:
+                                    if (config.getLabel().equals(ConfigPattern.SERVER)) {
+                                        baseConfig.setNetworkIp(config.getInput());
+                                    } else if (config.getLabel().equals(ConfigPattern.PORT)) {
+                                        baseConfig.setNetworkPort(config.getInput());
+                                    }
+                                    break;
+                                case ConfigPattern.MONITOR:
+                                    if (config.getLabel().equals(ConfigPattern.SERVER)) {
+                                        baseConfig.setMonitorIp(config.getInput());
+                                    } else if (config.getLabel().equals(ConfigPattern.PORT)) {
+                                        baseConfig.setMonitorPort(config.getInput());
+                                    }
+                                    break;
+                                case ConfigPattern.LOCAL:
+                                    if (config.getLabel().equals(ConfigPattern.SERIAL)) {
+                                        baseConfig.setLocalSerial(config.getInput());
+                                    } else if (config.getLabel().equals(ConfigPattern.STATION)) {
+                                        baseConfig.setLocalStation(config.getInput());
+                                    }
+                                    break;
+                            }
+                        }
+                    }
                     //保存数据
                     netConfigBox.put(configList);
+                    baseConfigBox.put(baseConfig);
                     Intent intent = new Intent(ActiveActivity.this, MainActivity.class);
-                    intent.putParcelableArrayListExtra("config", (ArrayList<? extends Parcelable>) configList);
                     startActivity(intent);
                     ActiveActivity.this.finish();
                     break;
@@ -287,6 +316,7 @@ public class ActiveActivity extends BaseActivity {
         dialog = new LoadingDialog(ActiveActivity.this, R.style.mdialog);
         dialog.show();
         netConfigBox = IApplication.boxStore.boxFor(Config.class);
+        baseConfigBox = IApplication.boxStore.boxFor(BaseConfig.class);
         Observable.create((ObservableOnSubscribe<List<Config>>) emitter -> emitter.onNext(netConfigBox.getAll()))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -331,11 +361,11 @@ public class ActiveActivity extends BaseActivity {
         configList.clear();
         //网络配置
         configList.add(new Config(ConfigPattern.NETWORK, 1));
-        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.SERVER, "192.168.1.25", 1));
+        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.SERVER, "192.168.1.127", 1));
         configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.PORT, "9099", 2));
         //监控配置
         configList.add(new Config(ConfigPattern.MONITOR, 2));
-        configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.SERVER, "192.168.1.25", 1));
+        configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.SERVER, "192.168.1.127", 1));
         configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.PORT, "80", 2));
         //本机配置
         //获取序列号
@@ -505,24 +535,26 @@ public class ActiveActivity extends BaseActivity {
                             Gson gson = new Gson();
                             String s = gson.toJson(serverInfo);
                             socketIO.emit("station", s);
-                            socketIO.on("station", args -> Observable.create((ObservableOnSubscribe<Result<ThWindowInfo>>) emitter ->
+                            socketIO.on("station", args -> Observable.create((ObservableOnSubscribe<Result<WindowInfo>>) emitter ->
                                     {
-                                        Type type = new TypeToken<Result<ThWindowInfo>>() {
+                                        Type type = new TypeToken<Result<WindowInfo>>() {
                                         }.getType();
-                                        Result<ThWindowInfo> result = gson.fromJson(args[0].toString(), type);
+                                        Result<WindowInfo> result = gson.fromJson(args[0].toString(), type);
                                         emitter.onNext(result);
                                     }
                             ).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-                                    .subscribe(new Observer<Result<ThWindowInfo>>() {
+                                    .subscribe(new Observer<Result<WindowInfo>>() {
                                         @Override
                                         public void onSubscribe(Disposable d) {
 
                                         }
 
                                         @Override
-                                        public void onNext(Result<ThWindowInfo> result) {
+                                        public void onNext(Result<WindowInfo> result) {
                                             dialog.cancel();
-                                            if (result != null && result.getCode().equals(200) && !TextUtils.isEmpty(result.getData().getName())) {
+                                            if (result != null && result.getCode().equals(200)
+                                                    && result.getData() != null
+                                                    && !TextUtils.isEmpty(result.getData().getName())) {
                                                 for (Config config : configList) {
                                                     if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
                                                         config.setInput(result.getData().getName());
