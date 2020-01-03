@@ -6,7 +6,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class FaceFeatureInfo {
-
+    private String name;
     private String faceFeatureCode;
+    private Integer groupId;
+
+    public FaceFeatureInfo(Integer groupId, String faceFeatureCode) {
+        this.groupId = groupId;
+        this.faceFeatureCode = faceFeatureCode;
+    }
 
 }

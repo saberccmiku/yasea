@@ -361,11 +361,11 @@ public class ActiveActivity extends BaseActivity {
         configList.clear();
         //网络配置
         configList.add(new Config(ConfigPattern.NETWORK, 1));
-        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.SERVER, "192.168.1.127", 1));
+        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.SERVER, "192.168.1.58", 1));
         configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.PORT, "9099", 2));
         //监控配置
         configList.add(new Config(ConfigPattern.MONITOR, 2));
-        configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.SERVER, "192.168.1.127", 1));
+        configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.SERVER, "192.168.1.58", 1));
         configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.PORT, "80", 2));
         //本机配置
         //获取序列号
