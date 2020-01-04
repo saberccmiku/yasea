@@ -122,6 +122,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private static List<FaceRegisterInfo> faceRegisterInfoList;
     private List<CompareResult> compareResultList;
     private CompositeDisposable getFeatureDelayedDisposables = new CompositeDisposable();
+    private boolean isSearchFromServerLib = false;
 
     /**
      * 注册人脸状态码，准备注册
@@ -997,7 +998,11 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     Log.i(TAG, "subscribe: fr search end = " + System.currentTimeMillis() + " trackId = " + requestId);
                     if (compareResult == null) {
                         //从远程服务获取特征信息
-                        searchFromServerLib(frFace, requestId);
+                        if (!isSearchFromServerLib) {
+                            //标注查询结束
+                            isSearchFromServerLib = true;
+                            searchFromServerLib(frFace, requestId);
+                        }
                     } else {
                         emitter.onNext(compareResult);
                     }
@@ -1106,70 +1111,15 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
                     @Override
                     public void onNext(Result<FaceFeatureInfo> faceFeatureInfoResult) {
+                        //标注查询结束
+                        isSearchFromServerLib = false;
                         if (faceFeatureInfoResult.isSuccess()) {
                             updateTvOnlineText("直播中/工作中");
                             FaceFeatureInfo temp = faceFeatureInfoResult.getData();
-//                            File imgFile = new File(FaceServer.ROOT_PATH + File.separator + FaceServer.SAVE_IMG_DIR + File.separator + temp.getName() + FaceServer.IMG_SUFFIX);
-//                            if (!imgFile.exists()) {
-//                                Glide.with(MainActivity.this).asBitmap()
-//                                        .load(temp.getImgUrl())
-//                                        .into(new SimpleTarget<Bitmap>() {
-//                                            @Override
-//                                            public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
-//                                                //Bitmap转换成byte[]
-//                                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//                                                resource.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-//                                                byte[] data = baos.toByteArray();
-//                                                System.out.println("---------data---------");
-//                                                System.out.println("--------data----------" + data);
-//                                                System.out.println("--------data----------");
-//                                                Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
-//                                                    boolean success = FaceServer.getInstance().register(MainActivity.this, data.clone(), previewSize.width, previewSize.height, temp.getName());
-//                                                    emitter.onNext(success);
-//                                                })
-//                                                        .subscribeOn(Schedulers.computation())
-//                                                        .observeOn(AndroidSchedulers.mainThread())
-//                                                        .subscribe(new Observer<Boolean>() {
-//                                                            @Override
-//                                                            public void onSubscribe(Disposable d) {
-//
-//                                                            }
-//
-//                                                            @Override
-//                                                            public void onNext(Boolean success) {
-//                                                                String result = success ? "register success!" : "register failed!";
-//                                                                if (success) {
-//                                                                    CompareResult compareResult = new CompareResult(temp.getName(), temp.getSimilarValue());
-//                                                                    compareResult.setTrackId(requestId);
-//                                                                    compareResultList.add(compareResult);
-//                                                                    adapter.notifyItemInserted(compareResultList.size() - 1);
-//                                                                }
-//                                                                Toast.makeText(MainActivity.this, result, Toast.LENGTH_SHORT).show();
-//                                                            }
-//
-//                                                            @Override
-//                                                            public void onError(Throwable e) {
-//                                                                Toast.makeText(MainActivity.this, "register failed!", Toast.LENGTH_SHORT).show();
-//                                                            }
-//
-//                                                            @Override
-//                                                            public void onComplete() {
-//
-//                                                            }
-//                                                        });
-//
-//                                            }
-//                                        });
-//
-//                            } else {
-//                                CompareResult compareResult = new CompareResult(temp.getName(), temp.getSimilarValue());
-//                                compareResult.setTrackId(requestId);
-//                                compareResultList.add(compareResult);
-//                                adapter.notifyItemInserted(compareResultList.size() - 1);
-//                            }
-
-                            CompareResult compareResult = new CompareResult(temp.getName(), temp.getSimilarValue(),temp.getImgUrl());
+                            CompareResult compareResult = new CompareResult(temp.getName(), temp.getSimilarValue(), temp.getImgUrl());
                             compareResult.setTrackId(requestId);
+                            compareResultList.clear();
+                            adapter.notifyDataSetChanged();
                             compareResultList.add(compareResult);
                             adapter.notifyItemInserted(compareResultList.size() - 1);
 
@@ -1181,12 +1131,14 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
                     @Override
                     public void onError(Throwable e) {
-
+                        //标注查询结束
+                        isSearchFromServerLib = false;
                     }
 
                     @Override
                     public void onComplete() {
-
+                        //标注查询结束
+                        isSearchFromServerLib = false;
                     }
                 }));
     }
