@@ -35,6 +35,7 @@ import com.arcsoft.face.LivenessInfo;
 import com.arcsoft.face.VersionInfo;
 import com.github.faucamp.simplertmp.RtmpHandler;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.seu.magicfilter.utils.MagicFilterType;
 
 import net.ossrs.yasea.SrsCameraView;
@@ -47,6 +48,7 @@ import net.ossrs.yasea.demo.base.BaseActivity;
 import net.ossrs.yasea.demo.bean.DrawInfo;
 import net.ossrs.yasea.demo.bean.FacePreviewInfo;
 import net.ossrs.yasea.demo.bean.FaceRegisterInfo;
+import net.ossrs.yasea.demo.bean.Result;
 import net.ossrs.yasea.demo.bean.equipment.BaseConfig;
 import net.ossrs.yasea.demo.bean.equipment.FaceFeatureInfo;
 import net.ossrs.yasea.demo.bean.equipment.WindowInfo;
@@ -69,6 +71,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Type;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
@@ -994,12 +997,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     Log.i(TAG, "subscribe: fr search end = " + System.currentTimeMillis() + " trackId = " + requestId);
                     if (compareResult == null) {
                         //从远程服务获取特征信息
-                        CompareResult serverCompareResult = searchFromServerLib(frFace);
-                        if (serverCompareResult == null) {
-                            emitter.onError(null);
-                        } else {
-                            emitter.onNext(compareResult);
-                        }
+                        searchFromServerLib(frFace);
                     } else {
                         emitter.onNext(compareResult);
                     }
@@ -1086,21 +1084,47 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      * @param faceFeature 传入特征数据
      * @return 比对结果
      */
-    public CompareResult searchFromServerLib(FaceFeature faceFeature) {
+    public void searchFromServerLib(FaceFeature faceFeature) {
         //本地库中不存在该人脸，请求服务器进行比对，比对成功后将人脸信息返回到本地存储
         String faceFeatureCode = Base64.encodeToString(faceFeature.getFeatureData(), Base64.DEFAULT);
-        FaceFeatureInfo faceFeatureInfo = new FaceFeatureInfo(101,faceFeatureCode);
+        FaceFeatureInfo faceFeatureInfo = new FaceFeatureInfo(101, faceFeatureCode);
         Gson gson = new Gson();
         String faceFeatureInfoJson = gson.toJson(faceFeatureInfo);
         socketIO.emit("searchFromServerLib", faceFeatureInfoJson);
         socketIO.on("searchFromServerLib", args -> {
-            FaceFeatureInfo resultFaceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
-            System.out.println("-----------resultFaceFeatureInfo------------");
-            System.out.println(resultFaceFeatureInfo);
-            System.out.println("----------resultFaceFeatureInfo-------------");
-        });
+            Observable.create((ObservableOnSubscribe<Result<FaceFeatureInfo>>) emitter -> {
+                Type type = new TypeToken<Result<FaceFeatureInfo>>() {
+                }.getType();
+                Result<FaceFeatureInfo> result = gson.fromJson(args[0].toString(), type);
+                emitter.onNext(result);
+            }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<Result<FaceFeatureInfo>>() {
+                        @Override
+                        public void onSubscribe(Disposable d) {
 
-        return null;
+                        }
+
+                        @Override
+                        public void onNext(Result<FaceFeatureInfo> faceFeatureInfoResult) {
+                            if (faceFeatureInfoResult.isSuccess()) {
+                                updateTvOnlineText("直播中/工作中");
+                            } else {
+                                updateTvOnlineText("直播中/" + faceFeatureInfoResult.getMessage());
+                            }
+
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+
+                        }
+
+                        @Override
+                        public void onComplete() {
+
+                        }
+                    });
+        });
     }
 
 
@@ -1367,7 +1391,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         }
     };
 
-    private void stopAll(){
+    private void stopAll() {
         mPublisher.stopPublish();
         mPublisher.stopRecord();
         mPublisher.stopCamera();
@@ -1375,7 +1399,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         //unInitEngine();
     }
 
-    private void startAll(){
+    private void startAll() {
         mPublisher.startPublish(rtmpUrl);
         mPublisher.startCamera();
         //activeEngine();
