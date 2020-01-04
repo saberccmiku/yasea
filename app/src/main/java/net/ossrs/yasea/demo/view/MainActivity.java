@@ -997,7 +997,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     Log.i(TAG, "subscribe: fr search end = " + System.currentTimeMillis() + " trackId = " + requestId);
                     if (compareResult == null) {
                         //从远程服务获取特征信息
-                        searchFromServerLib(frFace);
+                        searchFromServerLib(frFace, requestId);
                     } else {
                         emitter.onNext(compareResult);
                     }
@@ -1084,47 +1084,111 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      * @param faceFeature 传入特征数据
      * @return 比对结果
      */
-    public void searchFromServerLib(FaceFeature faceFeature) {
+    public void searchFromServerLib(FaceFeature faceFeature, Integer requestId) {
         //本地库中不存在该人脸，请求服务器进行比对，比对成功后将人脸信息返回到本地存储
         String faceFeatureCode = Base64.encodeToString(faceFeature.getFeatureData(), Base64.DEFAULT);
         FaceFeatureInfo faceFeatureInfo = new FaceFeatureInfo(101, faceFeatureCode);
         Gson gson = new Gson();
         String faceFeatureInfoJson = gson.toJson(faceFeatureInfo);
         socketIO.emit("searchFromServerLib", faceFeatureInfoJson);
-        socketIO.on("searchFromServerLib", args -> {
-            Observable.create((ObservableOnSubscribe<Result<FaceFeatureInfo>>) emitter -> {
-                Type type = new TypeToken<Result<FaceFeatureInfo>>() {
-                }.getType();
-                Result<FaceFeatureInfo> result = gson.fromJson(args[0].toString(), type);
-                emitter.onNext(result);
-            }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Observer<Result<FaceFeatureInfo>>() {
-                        @Override
-                        public void onSubscribe(Disposable d) {
+        socketIO.on("searchFromServerLib", args -> Observable
+                .create((ObservableOnSubscribe<Result<FaceFeatureInfo>>) emitter -> {
+                    Type type = new TypeToken<Result<FaceFeatureInfo>>() {
+                    }.getType();
+                    Result<FaceFeatureInfo> result = gson.fromJson(args[0].toString(), type);
+                    emitter.onNext(result);
+                }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Result<FaceFeatureInfo>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
 
+                    }
+
+                    @Override
+                    public void onNext(Result<FaceFeatureInfo> faceFeatureInfoResult) {
+                        if (faceFeatureInfoResult.isSuccess()) {
+                            updateTvOnlineText("直播中/工作中");
+                            FaceFeatureInfo temp = faceFeatureInfoResult.getData();
+//                            File imgFile = new File(FaceServer.ROOT_PATH + File.separator + FaceServer.SAVE_IMG_DIR + File.separator + temp.getName() + FaceServer.IMG_SUFFIX);
+//                            if (!imgFile.exists()) {
+//                                Glide.with(MainActivity.this).asBitmap()
+//                                        .load(temp.getImgUrl())
+//                                        .into(new SimpleTarget<Bitmap>() {
+//                                            @Override
+//                                            public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+//                                                //Bitmap转换成byte[]
+//                                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//                                                resource.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+//                                                byte[] data = baos.toByteArray();
+//                                                System.out.println("---------data---------");
+//                                                System.out.println("--------data----------" + data);
+//                                                System.out.println("--------data----------");
+//                                                Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+//                                                    boolean success = FaceServer.getInstance().register(MainActivity.this, data.clone(), previewSize.width, previewSize.height, temp.getName());
+//                                                    emitter.onNext(success);
+//                                                })
+//                                                        .subscribeOn(Schedulers.computation())
+//                                                        .observeOn(AndroidSchedulers.mainThread())
+//                                                        .subscribe(new Observer<Boolean>() {
+//                                                            @Override
+//                                                            public void onSubscribe(Disposable d) {
+//
+//                                                            }
+//
+//                                                            @Override
+//                                                            public void onNext(Boolean success) {
+//                                                                String result = success ? "register success!" : "register failed!";
+//                                                                if (success) {
+//                                                                    CompareResult compareResult = new CompareResult(temp.getName(), temp.getSimilarValue());
+//                                                                    compareResult.setTrackId(requestId);
+//                                                                    compareResultList.add(compareResult);
+//                                                                    adapter.notifyItemInserted(compareResultList.size() - 1);
+//                                                                }
+//                                                                Toast.makeText(MainActivity.this, result, Toast.LENGTH_SHORT).show();
+//                                                            }
+//
+//                                                            @Override
+//                                                            public void onError(Throwable e) {
+//                                                                Toast.makeText(MainActivity.this, "register failed!", Toast.LENGTH_SHORT).show();
+//                                                            }
+//
+//                                                            @Override
+//                                                            public void onComplete() {
+//
+//                                                            }
+//                                                        });
+//
+//                                            }
+//                                        });
+//
+//                            } else {
+//                                CompareResult compareResult = new CompareResult(temp.getName(), temp.getSimilarValue());
+//                                compareResult.setTrackId(requestId);
+//                                compareResultList.add(compareResult);
+//                                adapter.notifyItemInserted(compareResultList.size() - 1);
+//                            }
+
+                            CompareResult compareResult = new CompareResult(temp.getName(), temp.getSimilarValue(),temp.getImgUrl());
+                            compareResult.setTrackId(requestId);
+                            compareResultList.add(compareResult);
+                            adapter.notifyItemInserted(compareResultList.size() - 1);
+
+                        } else {
+                            updateTvOnlineText("直播中/" + faceFeatureInfoResult.getMessage());
                         }
 
-                        @Override
-                        public void onNext(Result<FaceFeatureInfo> faceFeatureInfoResult) {
-                            if (faceFeatureInfoResult.isSuccess()) {
-                                updateTvOnlineText("直播中/工作中");
-                            } else {
-                                updateTvOnlineText("直播中/" + faceFeatureInfoResult.getMessage());
-                            }
+                    }
 
-                        }
+                    @Override
+                    public void onError(Throwable e) {
 
-                        @Override
-                        public void onError(Throwable e) {
+                    }
 
-                        }
+                    @Override
+                    public void onComplete() {
 
-                        @Override
-                        public void onComplete() {
-
-                        }
-                    });
-        });
+                    }
+                }));
     }
 
 

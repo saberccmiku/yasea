@@ -6,10 +6,17 @@ public class CompareResult {
     private String userName;
     private float similar;
     private int trackId;
+    private String imgUrl;
 
     public CompareResult(String userName, float similar) {
         this.userName = userName;
         this.similar = similar;
+    }
+
+    public CompareResult(String userName, float similar,String imgUrl) {
+        this.userName = userName;
+        this.similar = similar;
+        this.imgUrl = imgUrl;
     }
 
 
@@ -37,12 +44,13 @@ public class CompareResult {
         this.trackId = trackId;
     }
 
-    @Override
-    public String toString() {
-        return "CompareResult{" +
-                "userName='" + userName + '\'' +
-                ", similar=" + similar +
-                ", trackId=" + trackId +
-                '}';
+    public String getImgUrl() {
+        return imgUrl;
     }
+
+    public void setImgUrl(String imgUrl) {
+        this.imgUrl = imgUrl;
+    }
+
+
 }

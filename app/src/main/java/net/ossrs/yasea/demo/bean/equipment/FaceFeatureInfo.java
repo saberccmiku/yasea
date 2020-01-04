@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 public class FaceFeatureInfo {
     private String name;
     private String faceFeatureCode;
+    private Integer similarValue;
+    private String imgUrl;
     private Integer groupId;
 
     public FaceFeatureInfo(Integer groupId, String faceFeatureCode) {
