@@ -1,5 +1,6 @@
 package net.ossrs.yasea.demo.view;
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
@@ -526,6 +527,12 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         if (registerStatus == REGISTER_STATUS_DONE) {
             registerStatus = REGISTER_STATUS_READY;
         }
+    }
+
+    @OnClick(R.id.tv_setting)
+    public void toActiveActivity(){
+        startActivity(new Intent(this,ActiveActivity.class));
+        this.finish();
     }
 
     private void initListener() {

@@ -159,7 +159,7 @@
             android:text="注册" />
 
         <TextView
-            android:id="@+id/tv_3"
+            android:id="@+id/tv_setting"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -168,7 +168,7 @@
             android:padding="5dp"
             android:gravity="center"
             android:textSize="12sp"
-            android:text="预留按钮3" />
+            android:text="设置" />
     </LinearLayout>
 
 </RelativeLayout>
