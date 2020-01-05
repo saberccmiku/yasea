@@ -201,7 +201,9 @@ public class ActiveActivity extends BaseActivity {
                         }
                     }
                     //保存数据
+                    netConfigBox.removeAll();
                     netConfigBox.put(configList);
+                    baseConfigBox.removeAll();
                     baseConfigBox.put(baseConfig);
                     Intent intent = new Intent(ActiveActivity.this, MainActivity.class);
                     startActivity(intent);
