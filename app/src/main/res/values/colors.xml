@@ -13,4 +13,9 @@
     <color name="pink_pressed">#ec407a</color>
     <color name="blue_semi_transparent">#805677fc</color>
     <color name="blue_semi_transparent_pressed">#80738ffe</color>
+    <color name="out_online">#80D3D3DA</color>
+    <color name="exception">#F0F04474</color>
+    <color name="online">#8009F521</color>
+    <color name="not_fount">#F0EEDC43</color>
+    <color name="empty">#F0EEDC43</color>
 </resources>

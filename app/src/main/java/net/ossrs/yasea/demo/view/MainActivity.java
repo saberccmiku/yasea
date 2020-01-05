@@ -93,7 +93,6 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.socket.client.Socket;
 import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -263,10 +262,10 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     protected void onDestroy() {
         if (mPublisher != null) {
             synchronized (mPublisher) {
-                stopAll();
                 //告诉服务器直播关了
                 FACE_STATUS = 0;
                 updateRecord(FACE_STATUS);
+                stopAll();
             }
         }
 
@@ -487,7 +486,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             btnSwitchEncoder.setEnabled(false);
             btnPause.setEnabled(true);
             flVideo.setVisibility(View.VISIBLE);
+            FACE_STATUS = 2;
             updateTvOnlineText("直播中/闲置中");
+            updateRecord(FACE_STATUS);
             topDrawable = getResources().getDrawable(R.drawable.ic_online, null);
             tvOnlineStatus.setText("离线");
 
@@ -498,11 +499,11 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
             btnSwitchEncoder.setEnabled(true);
             btnPause.setEnabled(false);
             flVideo.setVisibility(View.GONE);
-            updateTvOnlineText("离线中");
             topDrawable = getResources().getDrawable(R.drawable.ic_outline, null);
             tvOnlineStatus.setText("上线");
             //告诉服务器直播关了
             FACE_STATUS = 0;
+            updateTvOnlineText("离线中");
             updateRecord(FACE_STATUS);
         }
 
@@ -530,8 +531,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     }
 
     @OnClick(R.id.tv_setting)
-    public void toActiveActivity(){
-        startActivity(new Intent(this,ActiveActivity.class));
+    public void toActiveActivity() {
+        startActivity(new Intent(this, ActiveActivity.class));
         this.finish();
     }
 
@@ -775,6 +776,25 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      */
     private void updateTvOnlineText(String text) {
         synchronized (MainActivity.class) {
+            int color = R.color.exception;
+            switch (FACE_STATUS){
+                case 0:
+                    color = R.color.out_online;
+                    break;
+                case 1:
+                    color = R.color.online;
+                    break;
+                case 2:
+                    color = R.color.empty;
+                    break;
+                case 3:
+                    color = R.color.not_fount;
+                    break;
+                case 4:
+                    color = R.color.exception;
+                    break;
+            }
+            tvOnline.setTextColor(getResources().getColorStateList(color));
             tvOnline.setText(text);
         }
     }
@@ -1122,6 +1142,8 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                         isSearchFromServerLib = false;
                         if (faceFeatureInfoResult.isSuccess()) {
                             updateTvOnlineText("直播中/工作中");
+                            FACE_STATUS = 1;
+                            updateRecord(FACE_STATUS);
                             FaceFeatureInfo temp = faceFeatureInfoResult.getData();
                             CompareResult compareResult = new CompareResult(temp.getName(), temp.getSimilarValue(), temp.getImgUrl());
                             compareResult.setTrackId(requestId);
@@ -1131,7 +1153,13 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             adapter.notifyItemInserted(compareResultList.size() - 1);
 
                         } else {
+                            if (faceFeatureInfoResult.getMessage()!=null&&faceFeatureInfoResult.getMessage().equals("人脸不匹配")){
+                                FACE_STATUS = 3;
+                            }else {
+                                FACE_STATUS = 4;
+                            }
                             updateTvOnlineText("直播中/" + faceFeatureInfoResult.getMessage());
+                            updateRecord(FACE_STATUS);
                         }
 
                     }
@@ -1245,36 +1273,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         return json;
     }
 
-    private void asyRequest(RequestBody requestBody) {
-        final Request request = new Request.Builder()
-                .url("http://192.168.0.40:8080/faceSearch1")
-                .post(requestBody)
-                .build();
-        Call call = mHttpClient.newCall(request);
-        call.enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String responseStr = response.body().string();
-                try {
-                    JSONObject jsonObject = new JSONObject(responseStr);
-                    if ("15".equals(jsonObject.getString("code"))) {
-
-                    } else if ("200".equals(jsonObject.getString("code"))) {
-                        JSONObject data = jsonObject.getJSONObject("data");
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        });
-    }
-
     /**
      * 激活引擎
      */
@@ -1308,16 +1306,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         faceEngine.compareFaceFeature(sourceFaceFeature, targetFaceFeature, faceSimilar);
         return faceSimilar.getScore();
     }
-
-    /**
-     * 比较特征值
-     */
-    private void unInit() {
-        if (faceEngine != null) {
-            faceEngine.unInit();
-        }
-    }
-
 
     /**
      * I420转nv21
