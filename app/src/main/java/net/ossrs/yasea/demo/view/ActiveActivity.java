@@ -149,6 +149,11 @@ public class ActiveActivity extends BaseActivity {
                     editText.setFocusableInTouchMode(false);
 
                     editText.setOnClickListener(v -> checkCenterServerAndSelectStation());
+                } else if (config.getLabel().equals(ConfigPattern.WINDOW_ID)) {
+                    //设置editText可点击不可编辑
+                    editText.setCursorVisible(false);
+                    editText.setFocusable(false);
+                    editText.setFocusableInTouchMode(false);
                 }
                 editText.addTextChangedListener(textWatcher);
                 editText.setTag(textWatcher);
@@ -195,6 +200,8 @@ public class ActiveActivity extends BaseActivity {
                                         baseConfig.setLocalSerial(config.getInput());
                                     } else if (config.getLabel().equals(ConfigPattern.STATION)) {
                                         baseConfig.setLocalStation(config.getInput());
+                                    } else if (config.getLabel().equals(ConfigPattern.WINDOW_ID)) {
+                                        baseConfig.setLocalWindowId(config.getInput());
                                     }
                                     break;
                             }
@@ -378,6 +385,7 @@ public class ActiveActivity extends BaseActivity {
             configList.add(new Config(ConfigPattern.LOCAL, 3));
             configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.SERIAL, serial, 1));
             configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.STATION, null, 2));
+            configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.WINDOW_ID, null, 3));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -560,7 +568,8 @@ public class ActiveActivity extends BaseActivity {
                                                 for (Config config : configList) {
                                                     if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
                                                         config.setInput(result.getData().getName());
-                                                        break;
+                                                    } else if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.WINDOW_ID)) {
+                                                        config.setInput(result.getData().getWindowId());
                                                     }
                                                 }
 

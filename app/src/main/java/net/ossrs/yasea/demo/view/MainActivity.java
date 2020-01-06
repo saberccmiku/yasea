@@ -162,6 +162,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private Socket socketIO;
     private Integer FACE_STATUS = 0;//0离线中1工作中2闲置中3人脸不匹配4异常
     private Integer TEMP_FACE_STATUS = -1;//用来标记上传服务器的状态，以免频繁发送请求
+    private boolean IS_UPDATE_RECORD = false;//用来标记更新状态是否执行
 
 
     @Override
@@ -263,9 +264,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         if (mPublisher != null) {
             synchronized (mPublisher) {
                 //告诉服务器直播关了
+                stopAll();
                 FACE_STATUS = 0;
                 updateRecord(FACE_STATUS);
-                stopAll();
             }
         }
 
@@ -532,8 +533,12 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @OnClick(R.id.tv_setting)
     public void toActiveActivity() {
+        stopAll();
+        FACE_STATUS = 0;
+        updateRecord(FACE_STATUS);
         startActivity(new Intent(this, ActiveActivity.class));
         this.finish();
+
     }
 
     private void initListener() {
@@ -777,7 +782,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     private void updateTvOnlineText(String text) {
         synchronized (MainActivity.class) {
             int color = R.color.exception;
-            switch (FACE_STATUS){
+            switch (FACE_STATUS) {
                 case 0:
                     color = R.color.out_online;
                     break;
@@ -969,50 +974,56 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      * 坐席状态（0离线1在线2人脸不匹配3异常）
      */
     public void updateRecord(int status) {
-        if (CommonUtil.isNetworkAvailable(this)) {
-            Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
-                emitter.onNext(CommonUtil.testServerConnect(baseConfig.getNetworkIp(), Integer.valueOf(baseConfig.getNetworkPort())));
-            }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<Boolean>() {
-                @Override
-                public void onSubscribe(Disposable d) {
+        if (!IS_UPDATE_RECORD) {
+            //避免频繁发送同一状态给服务器，减少压力
+            if (status != TEMP_FACE_STATUS) {
+                IS_UPDATE_RECORD = true;//锁定线程
+                if (CommonUtil.isNetworkAvailable(this)) {
+                    Observable.create((ObservableOnSubscribe<Boolean>) emitter -> {
+                        emitter.onNext(CommonUtil.testServerConnect(baseConfig.getNetworkIp(), Integer.valueOf(baseConfig.getNetworkPort())));
+                    }).subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Observer<Boolean>() {
+                        @Override
+                        public void onSubscribe(Disposable d) {
 
-                }
-
-                @Override
-                public void onNext(Boolean aBoolean) {
-                    if (aBoolean) {
-                        //避免频繁发送同一状态给服务器，减少压力
-                        if (status != TEMP_FACE_STATUS) {
-                            TEMP_FACE_STATUS = status;
-                            WindowInfo windowInfo = new WindowInfo();
-                            windowInfo.setDevCode(baseConfig.getLocalSerial());
-                            windowInfo.setAddress(rtmpUrl);
-                            windowInfo.setStatus(status);
-                            Gson gson = new Gson();
-                            String windowInfoJson = gson.toJson(windowInfo);
-                            socketIO.emit("updateRecord", windowInfoJson);
-                            socketIO.on("updateRecord", args -> {
-                                FaceFeatureInfo faceFeatureInfo = gson.fromJson(args[0].toString(), FaceFeatureInfo.class);
-                            });
                         }
-                    } else {
-                        Toast.makeText(MainActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
-                    }
+
+                        @Override
+                        public void onNext(Boolean aBoolean) {
+                            if (aBoolean) {
+                                WindowInfo windowInfo = new WindowInfo();
+                                windowInfo.setDevCode(baseConfig.getLocalSerial());
+                                windowInfo.setAddress(rtmpUrl);
+                                windowInfo.setStatus(status);
+                                Gson gson = new Gson();
+                                String windowInfoJson = gson.toJson(windowInfo);
+                                socketIO.emit("updateRecord", windowInfoJson);
+                                socketIO.on("updateRecord", args -> {
+                                    IS_UPDATE_RECORD = false;
+                                    TEMP_FACE_STATUS = status;
+                                });
+
+                            } else {
+                                IS_UPDATE_RECORD = false;
+                                TEMP_FACE_STATUS = status;
+                                //Toast.makeText(MainActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+
+                        }
+
+                        @Override
+                        public void onComplete() {
+
+                        }
+                    });
+
+                } else {
+                    Toast.makeText(this, ResCode.NETWORK_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
                 }
-
-                @Override
-                public void onError(Throwable e) {
-
-                }
-
-                @Override
-                public void onComplete() {
-
-                }
-            });
-
-        } else {
-            Toast.makeText(this, ResCode.NETWORK_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
@@ -1119,7 +1130,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
     public void searchFromServerLib(FaceFeature faceFeature, Integer requestId) {
         //本地库中不存在该人脸，请求服务器进行比对，比对成功后将人脸信息返回到本地存储
         String faceFeatureCode = Base64.encodeToString(faceFeature.getFeatureData(), Base64.DEFAULT);
-        FaceFeatureInfo faceFeatureInfo = new FaceFeatureInfo(101, faceFeatureCode);
+        FaceFeatureInfo faceFeatureInfo = new FaceFeatureInfo(101, faceFeatureCode,baseConfig.getLocalWindowId());
         Gson gson = new Gson();
         String faceFeatureInfoJson = gson.toJson(faceFeatureInfo);
         socketIO.emit("searchFromServerLib", faceFeatureInfoJson);
@@ -1153,9 +1164,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                             adapter.notifyItemInserted(compareResultList.size() - 1);
 
                         } else {
-                            if (faceFeatureInfoResult.getMessage()!=null&&faceFeatureInfoResult.getMessage().equals("人脸不匹配")){
+                            if (faceFeatureInfoResult.getMessage() != null && faceFeatureInfoResult.getMessage().equals("人脸不匹配")) {
                                 FACE_STATUS = 3;
-                            }else {
+                            } else {
                                 FACE_STATUS = 4;
                             }
                             updateTvOnlineText("直播中/" + faceFeatureInfoResult.getMessage());

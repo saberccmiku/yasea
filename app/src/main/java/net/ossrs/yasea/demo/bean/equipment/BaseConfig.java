@@ -22,18 +22,20 @@ public class BaseConfig implements Parcelable {
     //本机配置
     private String localSerial;
     private String localStation;
+    private String localWindowId;
 
     public BaseConfig() {
     }
 
-
     protected BaseConfig(Parcel in) {
+        id = in.readLong();
         networkIp = in.readString();
         networkPort = in.readString();
         monitorIp = in.readString();
         monitorPort = in.readString();
         localSerial = in.readString();
         localStation = in.readString();
+        localWindowId = in.readString();
     }
 
     public static final Creator<BaseConfig> CREATOR = new Creator<BaseConfig>() {
@@ -47,21 +49,6 @@ public class BaseConfig implements Parcelable {
             return new BaseConfig[size];
         }
     };
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(networkIp);
-        dest.writeString(networkPort);
-        dest.writeString(monitorIp);
-        dest.writeString(monitorPort);
-        dest.writeString(localSerial);
-        dest.writeString(localStation);
-    }
 
     public long getId() {
         return id;
@@ -119,6 +106,31 @@ public class BaseConfig implements Parcelable {
         this.localStation = localStation;
     }
 
+    public String getLocalWindowId() {
+        return localWindowId;
+    }
+
+    public void setLocalWindowId(String localWindowId) {
+        this.localWindowId = localWindowId;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeLong(id);
+        dest.writeString(networkIp);
+        dest.writeString(networkPort);
+        dest.writeString(monitorIp);
+        dest.writeString(monitorPort);
+        dest.writeString(localSerial);
+        dest.writeString(localStation);
+        dest.writeString(localWindowId);
+    }
+
     @Override
     public String toString() {
         return "BaseConfig{" +
@@ -129,6 +141,7 @@ public class BaseConfig implements Parcelable {
                 ", monitorPort='" + monitorPort + '\'' +
                 ", localSerial='" + localSerial + '\'' +
                 ", localStation='" + localStation + '\'' +
+                ", localWindowId='" + localWindowId + '\'' +
                 '}';
     }
 }

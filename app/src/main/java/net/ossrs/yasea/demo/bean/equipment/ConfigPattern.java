@@ -13,4 +13,5 @@ public class ConfigPattern {
     public static final String SERIAL = "序列号";
     public static final String STATION = "工位号";
     public static final String IMEI = "标识符";
+    public static final String WINDOW_ID = "窗口号";
 }

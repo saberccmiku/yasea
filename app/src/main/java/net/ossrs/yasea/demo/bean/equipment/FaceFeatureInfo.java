@@ -11,10 +11,12 @@ public class FaceFeatureInfo {
     private Integer similarValue;
     private String imgUrl;
     private Integer groupId;
+    private String windowId;
 
-    public FaceFeatureInfo(Integer groupId, String faceFeatureCode) {
+    public FaceFeatureInfo(Integer groupId, String faceFeatureCode,String windowId) {
         this.groupId = groupId;
         this.faceFeatureCode = faceFeatureCode;
+        this.windowId = windowId;
     }
 
 }
