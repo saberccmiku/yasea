@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.widget.LinearLayoutManager;
@@ -379,11 +380,13 @@ public class ActiveActivity extends BaseActivity {
         //本机配置
         //获取序列号
         try {
-            Class<?> c = Class.forName("android.os.SystemProperties");
-            Method get = c.getMethod("get", String.class, String.class);
-            @SuppressLint("HardwareIds") String serial = (String) (get.invoke(c, "ro.serialno", "unknown"));
+
+            @SuppressLint("HardwareIds") String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+//            Class<?> c = Class.forName("android.os.SystemProperties");
+//            Method get = c.getMethod("get", String.class, String.class);
+//            @SuppressLint("HardwareIds") String serial = (String) (get.invoke(c, "ro.serialno", "unknown"));
             configList.add(new Config(ConfigPattern.LOCAL, 3));
-            configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.SERIAL, serial, 1));
+            configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.SERIAL, androidId, 1));
             configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.STATION, null, 2));
             configList.add(new Config(ConfigPattern.LOCAL, ConfigPattern.WINDOW_ID, null, 3));
 
@@ -565,15 +568,24 @@ public class ActiveActivity extends BaseActivity {
                                             if (result != null && result.getCode().equals(200)
                                                     && result.getData() != null
                                                     && !TextUtils.isEmpty(result.getData().getName())) {
-                                                for (Config config : configList) {
+                                                for (int i = 0; i < configList.size(); i++) {
+                                                    Config config = configList.get(i);
                                                     if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
                                                         config.setInput(result.getData().getName());
+                                                        adapter.notifyItemChanged(i);
                                                     } else if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.WINDOW_ID)) {
                                                         config.setInput(result.getData().getWindowId());
+                                                        adapter.notifyItemChanged(i);
                                                     }
                                                 }
-
-                                                adapter.notifyDataSetChanged();
+//                                                for (Config config : configList) {
+//                                                    if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
+//                                                        config.setInput(result.getData().getName());
+//                                                    } else if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.WINDOW_ID)) {
+//                                                        config.setInput(result.getData().getWindowId());
+//                                                    }
+//                                                }
+                                                //adapter.notifyDataSetChanged();
                                             } else {
                                                 Toast.makeText(ActiveActivity.this, ResCode.NOT_FOUND_STATION.getMsg(), Toast.LENGTH_SHORT).show();
                                             }

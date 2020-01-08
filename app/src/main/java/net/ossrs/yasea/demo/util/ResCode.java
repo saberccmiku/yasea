@@ -14,7 +14,9 @@ public enum ResCode {
     ACTIVE_SUCCESS(206, "激活成功"),
     ACTIVE_ERROR(207, "激活失败"),
     ACTIVATED(208, "已激活"),
-    NOT_FOUND_STATION(209, "未找到与该设备相匹配的工位信息");
+    NOT_FOUND_STATION(209, "未找到与该设备相匹配的工位信息"),
+    CENTER_SERVER_EVENT_ERROR(210, "中央服务通讯异常"),
+    CENTER_SERVER_EVENT_CONNECT_ERROR(211, "中央服务连接异常");
 
     // 成员变量
     private Integer code;

@@ -421,11 +421,19 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         int heightPixels = outMetrics.heightPixels;
         Log.i(TAG, "widthPixels = " + widthPixels + ",heightPixels = " + heightPixels);
         if (widthPixels == 1080 && heightPixels == 1920) {
+            Log.i(TAG, "小米max2");
             return new DrawHelper(580, 600,
                     900, 1100,
                     0, mPublisher.getCameraId(),
                     false, false, false);
+        } else if (widthPixels == 1440 && heightPixels == 2560){
+            Log.i(TAG, "华为");
+            return new DrawHelper(600, 600,
+                    1200, 1500,
+                    0, mPublisher.getCameraId(),
+                    false, false, false);
         } else {
+            Log.i(TAG, "小米");
             return new DrawHelper(600, 550,
                     600, 700,
                     0, mPublisher.getCameraId(),

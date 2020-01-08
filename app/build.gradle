@@ -79,6 +79,8 @@ dependencies {
     //lombok
     implementation 'javax.annotation:javax.annotation-api:1.2'
     implementation 'org.projectlombok:lombok:1.16.18'
+    //XUpdate
+    implementation 'com.github.xuexiangjys:XUpdate:1.1.1'
 }
 
 //一定放在dependencies代码块下

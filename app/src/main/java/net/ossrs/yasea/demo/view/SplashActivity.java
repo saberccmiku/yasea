@@ -9,16 +9,22 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
+import com.trello.rxlifecycle2.RxLifecycle;
+import com.trello.rxlifecycle2.android.ActivityEvent;
+import com.xuexiang.xupdate.XUpdate;
 
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
+import net.ossrs.yasea.demo.bean.RecommendInfo;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
 import net.ossrs.yasea.demo.bean.equipment.Config_;
+import net.ossrs.yasea.demo.net.RetrofitHelper;
 import net.ossrs.yasea.demo.util.CommonUtil;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
@@ -28,6 +34,7 @@ import net.ossrs.yasea.demo.widget.LoadingDialog;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -96,6 +103,10 @@ public class SplashActivity extends BaseActivity {
 
     private void checkServer() {
         if (CommonUtil.isNetworkAvailable(this)) {
+            //检查版本
+            XUpdate.newBuild(this)
+                    .updateUrl("http://192.168.1.58:18084/faceCache/updateApp")
+                    .update();
             //检查配置信息
             checkConfig();
         } else {
@@ -131,36 +142,7 @@ public class SplashActivity extends BaseActivity {
                     @Override
                     public void onNext(Boolean aBoolean) {
                         if (aBoolean) {
-//                            RetrofitHelper.getAppAPI()//基础URL
-//                                    .getRecommendedInfo()//接口后缀URL
-//                                    .compose(RxLifecycle.bindUntilEvent(lifecycle(), ActivityEvent.DESTROY))//设计是否备份数据
-//                                    .delay(1, TimeUnit.SECONDS)
-//                                    //.map(RecommendInfo::getResult)//得到JSON子数组
-//                                    .subscribeOn(Schedulers.io())//设计线程读写方式
-//                                    .observeOn(AndroidSchedulers.mainThread())//指定线程运行的位置
-//                                    .subscribe(new Observer<RecommendInfo>() {
-//                                        @Override
-//                                        public void onSubscribe(Disposable d) {
-//
-//                                        }
-//
-//                                        @Override
-//                                        public void onNext(RecommendInfo recommendInfo) {
-//                                            activeEngine();
-//                                        }
-//
-//                                        @Override
-//                                        public void onError(Throwable e) {
-//                                            Toast.makeText(SplashActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-//                                        }
-//
-//                                        @Override
-//                                        public void onComplete() {
-//                                        }
-//                                    });
-
                             checkCenterServer();
-
                         } else {
                             dialog.cancel();
                             tvStatus.setText(ResCode.LIVE_SERVER_ERROR.getMsg());

@@ -8,13 +8,25 @@ import android.view.WindowManager;
 
 import com.trello.rxlifecycle2.components.support.RxAppCompatActivity;
 
-import net.ossrs.yasea.demo.util.Constants;
+import net.ossrs.yasea.demo.util.ResCode;
 
 import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import butterknife.ButterKnife;
 import io.socket.client.IO;
 import io.socket.client.Socket;
+import okhttp3.OkHttpClient;
 
 /**
  * @author fjy
@@ -69,12 +81,15 @@ public abstract class BaseActivity extends RxAppCompatActivity {
         try {
             Log.i(TAG, "数据交互socket系统开始连接.............");
             mSocket = IO.socket(socketUrl);
-            mSocket.on(Socket.EVENT_CONNECT, args -> Log.i(TAG, "数据交互socket系统连接成功")).
-                    on(Socket.EVENT_DISCONNECT, args -> Log.i(TAG, "数据交互socket系统断开连接")).
-                    on("event", args -> {
-
-                    }).on(Socket.EVENT_ERROR, args -> Log.i(TAG, "数据交互socket系统异常")).
-                    on(Socket.EVENT_CONNECT_ERROR, args -> Log.i(TAG, "数据交互socket系统连接异常"));
+            mSocket.on(Socket.EVENT_CONNECT, args -> Log.i(TAG, "数据交互socket系统连接成功"))
+                    .on(Socket.EVENT_DISCONNECT, args -> Log.i(TAG, "数据交互socket系统断开连接"))
+                    .on(Socket.EVENT_ERROR, args -> Log.i(TAG, ResCode.CENTER_SERVER_EVENT_ERROR.getMsg()))
+                    .on(Socket.EVENT_CONNECT_ERROR, args -> {
+                        if (args[0] instanceof Throwable) {
+                            ((Throwable) args[0]).printStackTrace();
+                        }
+                        Log.i(TAG, ResCode.CENTER_SERVER_EVENT_CONNECT_ERROR.getMsg()+args[0].toString());
+                    });
 
             mSocket.connect();
         } catch (URISyntaxException e) {
@@ -83,6 +98,35 @@ public abstract class BaseActivity extends RxAppCompatActivity {
 
         return mSocket;
     }
+
+    private class MyHostnameVerifier implements HostnameVerifier {
+
+        @Override
+        public boolean verify(String hostname, SSLSession session) {
+            return true;
+        }
+    }
+
+    private class MyTrustManager implements X509TrustManager {
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            //这里不能返回null 否则会报空指针错误
+            X509Certificate[] x509Certificates = new X509Certificate[0];
+            return x509Certificates;
+        }
+    }
+
 
 
 }
