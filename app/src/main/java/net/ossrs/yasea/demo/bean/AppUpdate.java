@@ -4,29 +4,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class AppUpdate {
 
-    private Integer Code;
-    private String Msg;
-    private Integer UpdateStatus;
-    private Integer VersionCode;
-    private String VersionName;
-    private String ModifyContent;
-    private String DownloadUrl;
-    private Integer ApkSize;
-    private String ApkMd5;
+    private Integer code;
+    private String msg;
+    private Integer updateStatus;
+    private Integer versionCode;
+    private String versionName;
+    private String updateContent;
+    private String downloadUrl;
+    private Integer apkSize;
+    private String apkMd5;
+    private boolean hasUpdate;
+    private boolean isIgnorable;
 
-    public AppUpdate(){}
-
-    public AppUpdate(Integer code, String msg, Integer updateStatus, Integer versionCode, String versionName, String modifyContent, String downloadUrl, Integer apkSize, String apkMd5) {
-        Code = code;
-        Msg = msg;
-        UpdateStatus = updateStatus;
-        VersionCode = versionCode;
-        VersionName = versionName;
-        ModifyContent = modifyContent;
-        DownloadUrl = downloadUrl;
-        ApkSize = apkSize;
-        ApkMd5 = apkMd5;
-    }
 }

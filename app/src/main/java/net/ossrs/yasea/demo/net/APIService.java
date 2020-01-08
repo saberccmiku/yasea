@@ -30,4 +30,10 @@ public interface APIService {
     @GET("faceCache/updateApp")
     Observable<AppUpdate> getAppUpdate();
 
+    /**
+     * 下载APK
+     */
+    @GET("faceCache/downloadApp")
+    Observable<AppUpdate> downloadApp();
+
 }

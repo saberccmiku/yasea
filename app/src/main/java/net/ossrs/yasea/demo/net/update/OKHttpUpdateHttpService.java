@@ -1,14 +1,17 @@
 package net.ossrs.yasea.demo.net.update;
 
 import android.support.annotation.NonNull;
+import android.util.Log;
 
+import com.google.gson.Gson;
 import com.xuexiang.xupdate.proxy.IUpdateHttpService;
 
 import net.ossrs.yasea.demo.bean.AppUpdate;
-import net.ossrs.yasea.demo.bean.RecommendInfo;
+import net.ossrs.yasea.demo.bean.Temp;
 import net.ossrs.yasea.demo.net.RetrofitHelper;
 
 import java.util.Map;
+import java.util.Observable;
 import java.util.TreeMap;
 
 import io.reactivex.Observer;
@@ -24,6 +27,8 @@ import io.reactivex.schedulers.Schedulers;
  */
 public class OKHttpUpdateHttpService implements IUpdateHttpService {
 
+    private String TAG = OKHttpUpdateHttpService.class.getName();
+
 
     public OKHttpUpdateHttpService() {
 
@@ -31,7 +36,7 @@ public class OKHttpUpdateHttpService implements IUpdateHttpService {
 
     @Override
     public void asyncGet(@NonNull String url, @NonNull Map<String, Object> params, final @NonNull Callback callBack) {
-        System.out.println("-----------------------asyncGet---------------------");
+        Log.d(TAG,"-----------------------asyncGet---------------------");
         RetrofitHelper.getAppAPI()//基础URL
                 .getAppUpdate()//接口后缀URL
                 //.compose(RxLifecycle.bindUntilEvent(lifecycle(), ActivityEvent.DESTROY))//设计是否备份数据
@@ -46,10 +51,9 @@ public class OKHttpUpdateHttpService implements IUpdateHttpService {
 
                     @Override
                     public void onNext(AppUpdate appUpdate) {
-                        System.out.println("-------------------");
-                        System.out.println(appUpdate);
-                        System.out.println("--------------------");
-                        callBack.onSuccess(appUpdate.toString());
+                        Gson gson = new Gson();
+                        String s = gson.toJson(appUpdate);
+                        callBack.onSuccess(s);
                     }
 
                     @Override
@@ -66,6 +70,7 @@ public class OKHttpUpdateHttpService implements IUpdateHttpService {
     @Override
     public void asyncPost(@NonNull String url, @NonNull Map<String, Object> params, final @NonNull Callback callBack) {
         //这里默认post的是Form格式，使用json格式的请修改 post -> postString
+        Log.d(TAG,"-----------------------asyncPost---------------------");
         RetrofitHelper.getAppAPI()//基础URL
                 .getAppUpdate()//接口后缀URL
                 //.compose(RxLifecycle.bindUntilEvent(lifecycle(), ActivityEvent.DESTROY))//设计是否备份数据
@@ -80,10 +85,9 @@ public class OKHttpUpdateHttpService implements IUpdateHttpService {
 
                     @Override
                     public void onNext(AppUpdate appUpdate) {
-                        System.out.println("-------------------");
-                        System.out.println(appUpdate);
-                        System.out.println("--------------------");
-                        callBack.onSuccess(appUpdate.toString());
+                        Gson gson = new Gson();
+                        String s = gson.toJson(appUpdate);
+                        callBack.onSuccess(s);
                     }
 
                     @Override
@@ -95,16 +99,17 @@ public class OKHttpUpdateHttpService implements IUpdateHttpService {
                     public void onComplete() {
                     }
                 });
-
     }
 
     @Override
     public void download(@NonNull String url, @NonNull String path, @NonNull String fileName, final @NonNull DownloadCallback callback) {
+        Log.d(TAG,"-----------------------download---------------------");
+
     }
 
     @Override
     public void cancelDownload(@NonNull String url) {
-
+        Log.d(TAG,"-----------------------cancelDownload---------------------");
     }
 
     private Map<String, String> transform(Map<String, Object> params) {
