@@ -9,22 +9,18 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
-import com.trello.rxlifecycle2.RxLifecycle;
-import com.trello.rxlifecycle2.android.ActivityEvent;
 import com.xuexiang.xupdate.XUpdate;
 
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.base.BaseActivity;
-import net.ossrs.yasea.demo.bean.RecommendInfo;
+import net.ossrs.yasea.demo.bean.equipment.BaseConfig;
 import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.bean.equipment.ConfigPattern;
 import net.ossrs.yasea.demo.bean.equipment.Config_;
-import net.ossrs.yasea.demo.net.RetrofitHelper;
 import net.ossrs.yasea.demo.util.CommonUtil;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
@@ -34,7 +30,6 @@ import net.ossrs.yasea.demo.widget.LoadingDialog;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -104,9 +99,13 @@ public class SplashActivity extends BaseActivity {
     private void checkServer() {
         if (CommonUtil.isNetworkAvailable(this)) {
             //检查版本
-            XUpdate.newBuild(this)
-                    .updateUrl("http://192.168.1.58:18084/faceCache/updateApp")
-                    .update();
+//            List<BaseConfig> all = IApplication.boxStore.boxFor(BaseConfig.class).getAll();
+//            if (all != null && all.size() != 0) {
+//                BaseConfig baseConfig = all.get(0);
+//                XUpdate.newBuild(this)
+//                        .updateUrl("http://192.168.1.58:18084/faceCache/updateApp")
+//                        .update();
+//            }
             //检查配置信息
             checkConfig();
         } else {

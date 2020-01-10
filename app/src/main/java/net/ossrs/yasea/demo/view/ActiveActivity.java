@@ -42,9 +42,9 @@ import net.ossrs.yasea.demo.bean.equipment.WindowInfo;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
+import net.ossrs.yasea.demo.widget.IPopupWindow;
 import net.ossrs.yasea.demo.widget.LoadingDialog;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -92,6 +92,9 @@ public class ActiveActivity extends BaseActivity {
     TextView tvStatus;
     @BindView(R.id.tv_equipment_status)
     TextView tvEquipmentStatus;
+
+    @BindView(R.id.tv_active_title)
+    TextView tvActiveTitle;
 
     private Box<Config> netConfigBox;
     private Box<BaseConfig> baseConfigBox;
@@ -242,6 +245,16 @@ public class ActiveActivity extends BaseActivity {
             checkMonitorServer();
 
         }
+    }
+
+    @BindView(R.id.iv_more)
+    ImageButton ivMore;
+
+    @OnClick(R.id.iv_more)
+    public void showEnvironmentSelector() {
+        IPopupWindow iPopupWindow = new IPopupWindow(ActiveActivity.this, adapter, configList,tvActiveTitle);
+        int width = ivMore.getWidth();
+        iPopupWindow.showAsDropDown(ivMore, -width / 2, 0);
     }
 
     @Override
@@ -578,14 +591,6 @@ public class ActiveActivity extends BaseActivity {
                                                         adapter.notifyItemChanged(i);
                                                     }
                                                 }
-//                                                for (Config config : configList) {
-//                                                    if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.STATION)) {
-//                                                        config.setInput(result.getData().getName());
-//                                                    } else if (!TextUtils.isEmpty(config.getLabel()) && config.getLabel().equals(ConfigPattern.WINDOW_ID)) {
-//                                                        config.setInput(result.getData().getWindowId());
-//                                                    }
-//                                                }
-                                                //adapter.notifyDataSetChanged();
                                             } else {
                                                 Toast.makeText(ActiveActivity.this, ResCode.NOT_FOUND_STATION.getMsg(), Toast.LENGTH_SHORT).show();
                                             }

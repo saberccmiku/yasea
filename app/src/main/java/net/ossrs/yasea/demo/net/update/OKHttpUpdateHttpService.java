@@ -7,11 +7,10 @@ import com.google.gson.Gson;
 import com.xuexiang.xupdate.proxy.IUpdateHttpService;
 
 import net.ossrs.yasea.demo.bean.AppUpdate;
-import net.ossrs.yasea.demo.bean.Temp;
+import net.ossrs.yasea.demo.net.APIService;
 import net.ossrs.yasea.demo.net.RetrofitHelper;
 
 import java.util.Map;
-import java.util.Observable;
 import java.util.TreeMap;
 
 import io.reactivex.Observer;
@@ -21,9 +20,6 @@ import io.reactivex.schedulers.Schedulers;
 
 /**
  * 使用okhttp
- *
- * @author xuexiang
- * @since 2018/7/10 下午4:04
  */
 public class OKHttpUpdateHttpService implements IUpdateHttpService {
 
@@ -37,7 +33,7 @@ public class OKHttpUpdateHttpService implements IUpdateHttpService {
     @Override
     public void asyncGet(@NonNull String url, @NonNull Map<String, Object> params, final @NonNull Callback callBack) {
         Log.d(TAG,"-----------------------asyncGet---------------------");
-        RetrofitHelper.getAppAPI()//基础URL
+        RetrofitHelper.getAppAPI(url)//基础URL
                 .getAppUpdate()//接口后缀URL
                 //.compose(RxLifecycle.bindUntilEvent(lifecycle(), ActivityEvent.DESTROY))//设计是否备份数据
                 //.map(RecommendInfo::getResult)//得到JSON子数组
@@ -71,7 +67,7 @@ public class OKHttpUpdateHttpService implements IUpdateHttpService {
     public void asyncPost(@NonNull String url, @NonNull Map<String, Object> params, final @NonNull Callback callBack) {
         //这里默认post的是Form格式，使用json格式的请修改 post -> postString
         Log.d(TAG,"-----------------------asyncPost---------------------");
-        RetrofitHelper.getAppAPI()//基础URL
+        RetrofitHelper.getAppAPI(url)//基础URL
                 .getAppUpdate()//接口后缀URL
                 //.compose(RxLifecycle.bindUntilEvent(lifecycle(), ActivityEvent.DESTROY))//设计是否备份数据
                 //.map(RecommendInfo::getResult)//得到JSON子数组

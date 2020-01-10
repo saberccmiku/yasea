@@ -33,8 +33,9 @@ public class RetrofitHelper {
         initOkHttpClient();
     }
 
-    public static APIService getAppAPI() {
-        return createApi(APIService.class, ApiConstants.APP_BASE_URL);
+    public static APIService getAppAPI(String baseUrl) {
+//        return createApi(APIService.class, ApiConstants.APP_BASE_URL);
+        return createApi(APIService.class, baseUrl);
 
     }
 
