@@ -21,7 +21,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
@@ -253,7 +252,7 @@ public class ActiveActivity extends BaseActivity {
 
     @OnClick(R.id.iv_more)
     public void showEnvironmentSelector() {
-        IPopupWindow iPopupWindow = new IPopupWindow(ActiveActivity.this, adapter, configList,tvActiveTitle);
+        IPopupWindow iPopupWindow = new IPopupWindow(ActiveActivity.this, adapter, configList, tvActiveTitle);
         int width = ivMore.getWidth();
         iPopupWindow.showAsDropDown(ivMore, -width / 2, 0);
     }
@@ -269,7 +268,7 @@ public class ActiveActivity extends BaseActivity {
             if (isAllGranted) {
                 activeEngine();
             } else {
-                ToastUtil.showShort(this,"权限不足" );
+                ToastUtil.showShort(this, "权限不足");
             }
         }
     }
@@ -284,7 +283,8 @@ public class ActiveActivity extends BaseActivity {
         }
         Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
             FaceEngine faceEngine = new FaceEngine();
-            int activeCode = faceEngine.active(ActiveActivity.this, Constants.APP_ID, Constants.SDK_KEY);
+            //int activeCode = faceEngine.active(ActiveActivity.this, Constants.APP_ID, Constants.SDK_KEY);
+            int activeCode = faceEngine.active(ActiveActivity.this,  Constants.APP_ID, Constants.SDK_KEY);
             emitter.onNext(activeCode);
         })
                 .subscribeOn(Schedulers.io())
@@ -444,7 +444,7 @@ public class ActiveActivity extends BaseActivity {
                         } else {
                             dialog.cancel();
                             btnOperate.setClickable(true);
-                            ToastUtil.showShort(ActiveActivity.this,ResCode.LIVE_SERVER_ERROR.getMsg());
+                            ToastUtil.showShort(ActiveActivity.this, ResCode.LIVE_SERVER_ERROR.getMsg());
                         }
                     }
 

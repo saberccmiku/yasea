@@ -46,9 +46,8 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation project(path: ':library')
-    implementation files('libs/arcsoft_face.jar')
     implementation 'com.android.support:recyclerview-v7:28.0.0'
-    implementation ('io.socket:socket.io-client:0.8.3') {
+    implementation('io.socket:socket.io-client:0.8.3') {
         exclude group: 'org.json', module: 'json'
     }
     implementation 'com.google.code.gson:gson:2.8.2'
@@ -56,13 +55,13 @@ dependencies {
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
     //okhttp3
     implementation 'com.squareup.okhttp3:okhttp:3.12.1'
-    implementation "com.squareup.okhttp3:logging-interceptor:3.10.0"
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.10.0'
     //retrofit2
     implementation 'com.squareup.retrofit2:retrofit:2.4.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
     implementation 'com.squareup.retrofit2:adapter-rxjava2:2.4.0'
     //rxjava2
-    implementation "io.reactivex.rxjava2:rxjava:2.1.17"
+    implementation 'io.reactivex.rxjava2:rxjava:2.1.17'
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
     //retrofit2辅助
     implementation 'com.trello.rxlifecycle2:rxlifecycle-components:2.2.2'
@@ -75,12 +74,12 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.7.1'
     //android 加载动画
     implementation 'com.github.ybq:Android-SpinKit:1.4.0'
-
     //lombok
     implementation 'javax.annotation:javax.annotation-api:1.2'
     implementation 'org.projectlombok:lombok:1.16.18'
     //XUpdate
     implementation 'com.github.xuexiangjys:XUpdate:1.1.1'
+    implementation files('libs/arcsoft_face.jar')
 }
 
 //一定放在dependencies代码块下

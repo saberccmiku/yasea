@@ -8,6 +8,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
@@ -35,6 +36,9 @@ public class IPopupWindow extends PopupWindow {
         this.context = context;
         this.adapter = adapter;
         this.configList = configList;
+        //设置宽高
+        setWidth(ViewGroup.LayoutParams.WRAP_CONTENT);
+        setHeight(ViewGroup.LayoutParams.WRAP_CONTENT);
         setFocusable(true);
         setOutsideTouchable(true);
         setTouchable(true);

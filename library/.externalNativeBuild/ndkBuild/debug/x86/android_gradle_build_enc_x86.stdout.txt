@@ -1,1 +1,0 @@
-make: `F:/AndroidStudioWorkspace/yasea/library/build/intermediates/ndkBuild/debug/obj/local/x86/libenc.so' is up to date.

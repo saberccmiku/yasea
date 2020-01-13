@@ -23,10 +23,8 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.arcsoft.face.AgeInfo;
-import com.arcsoft.face.ErrorInfo;
 import com.arcsoft.face.FaceEngine;
 import com.arcsoft.face.FaceFeature;
 import com.arcsoft.face.FaceInfo;
@@ -56,7 +54,6 @@ import net.ossrs.yasea.demo.bean.equipment.WindowInfo;
 import net.ossrs.yasea.demo.faceserver.CompareResult;
 import net.ossrs.yasea.demo.faceserver.FaceServer;
 import net.ossrs.yasea.demo.util.CommonUtil;
-import net.ossrs.yasea.demo.util.ConfigUtil;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.DrawHelper;
 import net.ossrs.yasea.demo.util.ResCode;
@@ -277,29 +274,6 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     }
 
-    /**
-     * 销毁引擎
-     */
-    private void unInitEngine() {
-
-        //faceHelper中可能会有FR耗时操作仍在执行，加锁防止crash
-        if (faceHelper != null) {
-            synchronized (faceHelper) {
-                if (afCode == ErrorInfo.MOK) {
-                    afCode = faceEngine.unInit();
-                    Log.i(TAG, "unInitEngine: " + afCode);
-                }
-            }
-            ConfigUtil.setTrackId(this, faceHelper.getCurrentTrackId());
-            faceHelper.release();
-        } else {
-            if (afCode == ErrorInfo.MOK) {
-                afCode = faceEngine.unInit();
-                Log.i(TAG, "unInitEngine: " + afCode);
-            }
-        }
-    }
-
 
     @Override
     public int getLayoutId() {
@@ -427,7 +401,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     900, 1100,
                     0, mPublisher.getCameraId(),
                     false, false, false);
-        } else if (widthPixels == 1440 && heightPixels == 2560){
+        } else if (widthPixels == 1440 && heightPixels == 2560) {
             Log.i(TAG, "华为");
             return new DrawHelper(600, 600,
                     1200, 1500,
@@ -480,9 +454,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         if (isOnline) {
             startAll();
             if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
-                ToastUtil.showShort(MainActivity.this,"Use hard encoder");
+                ToastUtil.showShort(MainActivity.this, "Use hard encoder");
             } else {
-                ToastUtil.showShort(MainActivity.this,"Use soft encoder");
+                ToastUtil.showShort(MainActivity.this, "Use soft encoder");
             }
             btnPublish.setText("stop");
             btnSwitchEncoder.setEnabled(false);
@@ -517,7 +491,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @OnClick(R.id.tv_business)
     public void businessAction() {
-        ToastUtil.showShort(MainActivity.this,"该功能还未开放");
+        ToastUtil.showShort(MainActivity.this, "该功能还未开放");
     }
 
     /**
@@ -548,9 +522,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 startAll();
 
                 if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
-                    ToastUtil.showShort(MainActivity.this,"Use hard encoder");
+                    ToastUtil.showShort(MainActivity.this, "Use hard encoder");
                 } else {
-                    ToastUtil.showShort(MainActivity.this,"Use soft encoder");
+                    ToastUtil.showShort(MainActivity.this, "Use soft encoder");
                 }
                 btnPublish.setText("stop");
                 btnSwitchEncoder.setEnabled(false);
@@ -640,7 +614,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     private void handleException(Exception e) {
         try {
-            ToastUtil.showShort(MainActivity.this,e.getMessage());
+            ToastUtil.showShort(MainActivity.this, e.getMessage());
             stopAll();
             btnPublish.setText("publish");
             btnRecord.setText("record");
@@ -654,12 +628,12 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     public void onRtmpConnecting(String msg) {
-        ToastUtil.showShort(MainActivity.this,msg);
+        ToastUtil.showShort(MainActivity.this, msg);
     }
 
     @Override
     public void onRtmpConnected(String msg) {
-        ToastUtil.showShort(MainActivity.this,msg);
+        ToastUtil.showShort(MainActivity.this, msg);
     }
 
     @Override
@@ -672,12 +646,12 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     public void onRtmpStopped() {
-        ToastUtil.showShort(MainActivity.this,"Stopped");
+        ToastUtil.showShort(MainActivity.this, "Stopped");
     }
 
     @Override
     public void onRtmpDisconnected() {
-        ToastUtil.showShort(MainActivity.this,"Disconnected");
+        ToastUtil.showShort(MainActivity.this, "Disconnected");
     }
 
     @Override
@@ -729,22 +703,22 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     public void onRecordPause() {
-        ToastUtil.showShort(MainActivity.this,"Record paused");
+        ToastUtil.showShort(MainActivity.this, "Record paused");
     }
 
     @Override
     public void onRecordResume() {
-        ToastUtil.showShort(MainActivity.this,"Record resumed");
+        ToastUtil.showShort(MainActivity.this, "Record resumed");
     }
 
     @Override
     public void onRecordStarted(String msg) {
-        ToastUtil.showShort(MainActivity.this,"Recording file: " + msg);
+        ToastUtil.showShort(MainActivity.this, "Recording file: " + msg);
     }
 
     @Override
     public void onRecordFinished(String msg) {
-        ToastUtil.showShort(MainActivity.this,"MP4 file saved: " + msg);
+        ToastUtil.showShort(MainActivity.this, "MP4 file saved: " + msg);
     }
 
     @Override
@@ -761,12 +735,12 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     public void onNetworkWeak() {
-        ToastUtil.showShort(MainActivity.this,"Network weak" );
+        ToastUtil.showShort(MainActivity.this, "Network weak");
     }
 
     @Override
     public void onNetworkResume() {
-        ToastUtil.showShort(MainActivity.this,"Network resume" );
+        ToastUtil.showShort(MainActivity.this, "Network resume");
     }
 
     @Override
@@ -864,13 +838,13 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                                             @Override
                                             public void onNext(Boolean success) {
                                                 String result = success ? "register success!" : "register failed!";
-                                                ToastUtil.showShort(mainActivity,result );
+                                                ToastUtil.showShort(mainActivity, result);
                                                 mainActivity.registerStatus = REGISTER_STATUS_DONE;
                                             }
 
                                             @Override
                                             public void onError(Throwable e) {
-                                                ToastUtil.showShort(mainActivity,"register failed!" );
+                                                ToastUtil.showShort(mainActivity, "register failed!");
                                                 mainActivity.registerStatus = REGISTER_STATUS_DONE;
                                             }
 
@@ -1001,7 +975,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     });
 
                 } else {
-                    ToastUtil.showShort(this,ResCode.NETWORK_ERROR.getMsg() );
+                    ToastUtil.showShort(this, ResCode.NETWORK_ERROR.getMsg());
                 }
             }
         }
@@ -1181,7 +1155,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      * 初始化引擎
      */
     private void initEngine() {
-        faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, FaceEngine.ASF_OP_0_HIGHER_EXT,
+        faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, FaceEngine.ASF_OP_270_ONLY,
                 16, MAX_DETECT_NUM, FaceEngine.ASF_FACE_RECOGNITION | FaceEngine.ASF_FACE_DETECT | FaceEngine.ASF_AGE | FaceEngine.ASF_FACE3DANGLE | FaceEngine.ASF_GENDER | FaceEngine.ASF_LIVENESS);
         VersionInfo versionInfo = new VersionInfo();
         faceEngine.getVersion(versionInfo);

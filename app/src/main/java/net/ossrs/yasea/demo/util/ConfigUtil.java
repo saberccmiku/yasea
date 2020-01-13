@@ -20,13 +20,14 @@ public class ConfigUtil {
                 .apply();
     }
 
-    public static int getTrackId(Context context){
-        if (context == null){
+    public static int getTrackId(Context context) {
+        if (context == null) {
             return 0;
         }
-        SharedPreferences sharedPreferences = context.getSharedPreferences(APP_NAME,Context.MODE_PRIVATE);
-        return sharedPreferences.getInt(TRACK_ID,0);
+        SharedPreferences sharedPreferences = context.getSharedPreferences(APP_NAME, Context.MODE_PRIVATE);
+        return sharedPreferences.getInt(TRACK_ID, 0);
     }
+
     public static void setFtOrient(Context context, int ftOrient) {
         if (context == null) {
             return;
@@ -37,11 +38,11 @@ public class ConfigUtil {
                 .apply();
     }
 
-    public static int getFtOrient(Context context){
-        if (context == null){
+    public static int getFtOrient(Context context) {
+        if (context == null) {
             return FaceEngine.ASF_OP_270_ONLY;
         }
-        SharedPreferences sharedPreferences = context.getSharedPreferences(APP_NAME,Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = context.getSharedPreferences(APP_NAME, Context.MODE_PRIVATE);
         return sharedPreferences.getInt(FT_ORIENT, FaceEngine.ASF_OP_270_ONLY);
     }
 }
