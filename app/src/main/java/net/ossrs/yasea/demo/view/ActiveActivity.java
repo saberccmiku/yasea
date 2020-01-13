@@ -41,6 +41,7 @@ import net.ossrs.yasea.demo.bean.equipment.ServerInfo;
 import net.ossrs.yasea.demo.bean.equipment.WindowInfo;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
+import net.ossrs.yasea.demo.util.ToastUtil;
 import net.ossrs.yasea.demo.util.permission.CommonUtil;
 import net.ossrs.yasea.demo.widget.IPopupWindow;
 import net.ossrs.yasea.demo.widget.LoadingDialog;
@@ -237,7 +238,7 @@ public class ActiveActivity extends BaseActivity {
                     isComplete = false;
                 }
                 if (!isComplete) {
-                    Toast.makeText(this, config.getLabel() + "未填写", Toast.LENGTH_SHORT).show();
+                    ToastUtil.showShort(ActiveActivity.this, config.getLabel() + "未填写");
                     return;
                 }
             }
@@ -268,7 +269,7 @@ public class ActiveActivity extends BaseActivity {
             if (isAllGranted) {
                 activeEngine();
             } else {
-                Toast.makeText(this, "权限不足", Toast.LENGTH_SHORT).show();
+                ToastUtil.showShort(this,"权限不足" );
             }
         }
     }
@@ -443,7 +444,7 @@ public class ActiveActivity extends BaseActivity {
                         } else {
                             dialog.cancel();
                             btnOperate.setClickable(true);
-                            Toast.makeText(ActiveActivity.this, ResCode.LIVE_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
+                            ToastUtil.showShort(ActiveActivity.this,ResCode.LIVE_SERVER_ERROR.getMsg());
                         }
                     }
 
@@ -498,7 +499,7 @@ public class ActiveActivity extends BaseActivity {
                         } else {
                             dialog.cancel();
                             btnOperate.setClickable(true);
-                            Toast.makeText(ActiveActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
+                            ToastUtil.showShort(ActiveActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg());
                         }
 
                     }
@@ -592,7 +593,7 @@ public class ActiveActivity extends BaseActivity {
                                                     }
                                                 }
                                             } else {
-                                                Toast.makeText(ActiveActivity.this, ResCode.NOT_FOUND_STATION.getMsg(), Toast.LENGTH_SHORT).show();
+                                                ToastUtil.showShort(ActiveActivity.this, ResCode.NOT_FOUND_STATION.getMsg());
                                             }
                                         }
 
@@ -611,7 +612,7 @@ public class ActiveActivity extends BaseActivity {
 
                         } else {
                             dialog.cancel();
-                            Toast.makeText(ActiveActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
+                            ToastUtil.showShort(ActiveActivity.this, ResCode.CENTER_SERVER_ERROR.getMsg());
                         }
 
                     }

@@ -60,6 +60,7 @@ import net.ossrs.yasea.demo.util.ConfigUtil;
 import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.DrawHelper;
 import net.ossrs.yasea.demo.util.ResCode;
+import net.ossrs.yasea.demo.util.ToastUtil;
 import net.ossrs.yasea.demo.util.ViewUtil;
 import net.ossrs.yasea.demo.util.face.FaceHelper;
 import net.ossrs.yasea.demo.util.face.FaceListener;
@@ -479,9 +480,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         if (isOnline) {
             startAll();
             if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
-                Toast.makeText(getApplicationContext(), "Use hard encoder", Toast.LENGTH_SHORT).show();
+                ToastUtil.showShort(MainActivity.this,"Use hard encoder");
             } else {
-                Toast.makeText(getApplicationContext(), "Use soft encoder", Toast.LENGTH_SHORT).show();
+                ToastUtil.showShort(MainActivity.this,"Use soft encoder");
             }
             btnPublish.setText("stop");
             btnSwitchEncoder.setEnabled(false);
@@ -516,7 +517,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @OnClick(R.id.tv_business)
     public void businessAction() {
-        Toast.makeText(this, "该功能还未开放", Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,"该功能还未开放");
     }
 
     /**
@@ -547,9 +548,9 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                 startAll();
 
                 if (btnSwitchEncoder.getText().toString().contentEquals("soft encoder")) {
-                    Toast.makeText(getApplicationContext(), "Use hard encoder", Toast.LENGTH_SHORT).show();
+                    ToastUtil.showShort(MainActivity.this,"Use hard encoder");
                 } else {
-                    Toast.makeText(getApplicationContext(), "Use soft encoder", Toast.LENGTH_SHORT).show();
+                    ToastUtil.showShort(MainActivity.this,"Use soft encoder");
                 }
                 btnPublish.setText("stop");
                 btnSwitchEncoder.setEnabled(false);
@@ -639,7 +640,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     private void handleException(Exception e) {
         try {
-            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+            ToastUtil.showShort(MainActivity.this,e.getMessage());
             stopAll();
             btnPublish.setText("publish");
             btnRecord.setText("record");
@@ -653,12 +654,12 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     public void onRtmpConnecting(String msg) {
-        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,msg);
     }
 
     @Override
     public void onRtmpConnected(String msg) {
-        Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,msg);
     }
 
     @Override
@@ -671,12 +672,12 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     public void onRtmpStopped() {
-        Toast.makeText(getApplicationContext(), "Stopped", Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,"Stopped");
     }
 
     @Override
     public void onRtmpDisconnected() {
-        Toast.makeText(getApplicationContext(), "Disconnected", Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,"Disconnected");
     }
 
     @Override
@@ -728,22 +729,22 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     public void onRecordPause() {
-        Toast.makeText(getApplicationContext(), "Record paused", Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,"Record paused");
     }
 
     @Override
     public void onRecordResume() {
-        Toast.makeText(getApplicationContext(), "Record resumed", Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,"Record resumed");
     }
 
     @Override
     public void onRecordStarted(String msg) {
-        Toast.makeText(getApplicationContext(), "Recording file: " + msg, Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,"Recording file: " + msg);
     }
 
     @Override
     public void onRecordFinished(String msg) {
-        Toast.makeText(getApplicationContext(), "MP4 file saved: " + msg, Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,"MP4 file saved: " + msg);
     }
 
     @Override
@@ -760,12 +761,12 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
 
     @Override
     public void onNetworkWeak() {
-        Toast.makeText(getApplicationContext(), "Network weak", Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,"Network weak" );
     }
 
     @Override
     public void onNetworkResume() {
-        Toast.makeText(getApplicationContext(), "Network resume", Toast.LENGTH_SHORT).show();
+        ToastUtil.showShort(MainActivity.this,"Network resume" );
     }
 
     @Override
@@ -863,13 +864,13 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                                             @Override
                                             public void onNext(Boolean success) {
                                                 String result = success ? "register success!" : "register failed!";
-                                                Toast.makeText(mainActivity, result, Toast.LENGTH_SHORT).show();
+                                                ToastUtil.showShort(mainActivity,result );
                                                 mainActivity.registerStatus = REGISTER_STATUS_DONE;
                                             }
 
                                             @Override
                                             public void onError(Throwable e) {
-                                                Toast.makeText(mainActivity, "register failed!", Toast.LENGTH_SHORT).show();
+                                                ToastUtil.showShort(mainActivity,"register failed!" );
                                                 mainActivity.registerStatus = REGISTER_STATUS_DONE;
                                             }
 
@@ -1000,7 +1001,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     });
 
                 } else {
-                    Toast.makeText(this, ResCode.NETWORK_ERROR.getMsg(), Toast.LENGTH_SHORT).show();
+                    ToastUtil.showShort(this,ResCode.NETWORK_ERROR.getMsg() );
                 }
             }
         }
