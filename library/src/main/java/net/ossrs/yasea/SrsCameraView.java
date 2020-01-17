@@ -1,8 +1,10 @@
 package net.ossrs.yasea;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
@@ -12,8 +14,10 @@ import android.hardware.Camera;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
@@ -55,7 +59,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
     private Camera mCamera;
     private ByteBuffer mGLPreviewBuffer;
-    private int mCamId = -1;
+    private int mCamId = 1;
     private int mPreviewRotation = 0;
     private int mPreviewOrientation = Configuration.ORIENTATION_LANDSCAPE;
 
@@ -362,7 +366,14 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
         //mCamera.setDisplayOrientation(mPreviewRotation);
         //设置预览方向顺时针旋转90 ，摄像头预览方向与实际相差90度
-        mCamera.setDisplayOrientation(90);
+        @SuppressLint("HardwareIds") String androidId = Settings.Secure.getString(getContext().getContentResolver(), Settings.Secure.ANDROID_ID);
+        if (!TextUtils.isEmpty(androidId) && androidId.equals("36c210b069ec60de")) {
+            mCamera.setDisplayOrientation(0);
+        } else {
+            //设置竖屏代码：
+            mCamera.setDisplayOrientation(90);
+        }
+
 
         try {
             mCamera.setPreviewTexture(surfaceTexture);

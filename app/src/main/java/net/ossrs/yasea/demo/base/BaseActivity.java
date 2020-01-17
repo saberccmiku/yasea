@@ -1,32 +1,40 @@
 package net.ossrs.yasea.demo.base;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Window;
 import android.view.WindowManager;
 
 import com.trello.rxlifecycle2.components.support.RxAppCompatActivity;
 
+import net.ossrs.yasea.demo.R;
+import net.ossrs.yasea.demo.application.IApplication;
+import net.ossrs.yasea.demo.bean.equipment.Config;
 import net.ossrs.yasea.demo.util.ResCode;
+import net.ossrs.yasea.demo.util.permission.PermissionListener;
+import net.ossrs.yasea.demo.util.permission.PermissionsUtil;
+import net.ossrs.yasea.demo.view.SplashActivity;
+import net.ossrs.yasea.demo.widget.LoadingDialog;
 
 import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import butterknife.ButterKnife;
 import io.socket.client.IO;
 import io.socket.client.Socket;
-import okhttp3.OkHttpClient;
 
 /**
  * @author fjy
@@ -34,6 +42,13 @@ import okhttp3.OkHttpClient;
 public abstract class BaseActivity extends RxAppCompatActivity {
 
     private String TAG = BaseActivity.class.getName();
+
+    private static final int ACTION_REQUEST_PERMISSIONS = 0x001;
+    private static final String[] NEEDED_PERMISSIONS = new String[]{
+            Manifest.permission.CAMERA,
+            Manifest.permission.READ_PHONE_STATE
+    };
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -46,10 +61,40 @@ public abstract class BaseActivity extends RxAppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
         //避免进入页面EdiText自动弹出软键盘
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+
+        @SuppressLint("HardwareIds") String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        if (!TextUtils.isEmpty(androidId) && androidId.equals("36c210b069ec60de")) {
+            //由于横屏有两个方向的横法，而这个设置横屏的语句，假设不是默认的横屏方向，会把已经横屏的屏幕旋转180°。
+
+            //所以能够先推断是否已经为横屏了。假设不是再旋转，不会让用户认为转的莫名其妙啦！代码例如以下：
+            if (this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            }
+        } else {
+            //设置竖屏代码：
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//竖屏
+        }
+
+        //设置横屏代码：
+        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);//横屏
+
+
         setContentView(this.getLayoutId());
         ButterKnife.bind(this);
-        initView();
-        load();
+        PermissionListener listener = new PermissionListener() {
+            @Override
+            public void permissionGranted(@NonNull String[] permissions) {
+                initView();
+                load();
+            }
+
+            @Override
+            public void permissionDenied(@NonNull String[] permissions) {
+
+            }
+        };
+        PermissionsUtil.requestPermission(this, listener, NEEDED_PERMISSIONS);
+
     }
 
     @Override
@@ -88,7 +133,7 @@ public abstract class BaseActivity extends RxAppCompatActivity {
                         if (args[0] instanceof Throwable) {
                             ((Throwable) args[0]).printStackTrace();
                         }
-                        Log.i(TAG, ResCode.CENTER_SERVER_EVENT_CONNECT_ERROR.getMsg()+args[0].toString());
+                        Log.i(TAG, ResCode.CENTER_SERVER_EVENT_CONNECT_ERROR.getMsg() + args[0].toString());
                     });
 
             mSocket.connect();
@@ -126,7 +171,6 @@ public abstract class BaseActivity extends RxAppCompatActivity {
             return x509Certificates;
         }
     }
-
 
 
 }

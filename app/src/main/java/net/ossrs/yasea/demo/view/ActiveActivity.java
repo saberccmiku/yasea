@@ -283,7 +283,6 @@ public class ActiveActivity extends BaseActivity {
         }
         Observable.create((ObservableOnSubscribe<Integer>) emitter -> {
             FaceEngine faceEngine = new FaceEngine();
-            //int activeCode = faceEngine.active(ActiveActivity.this, Constants.APP_ID, Constants.SDK_KEY);
             int activeCode = faceEngine.active(ActiveActivity.this,  Constants.APP_ID, Constants.SDK_KEY);
             emitter.onNext(activeCode);
         })
@@ -385,18 +384,18 @@ public class ActiveActivity extends BaseActivity {
         configList.clear();
         //网络配置
         configList.add(new Config(ConfigPattern.NETWORK, 1));
-        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.SERVER, "192.168.1.58", 1));
+        configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.SERVER, "192.168.0.124", 1));
         configList.add(new Config(ConfigPattern.NETWORK, ConfigPattern.PORT, "9099", 2));
         //监控配置
         configList.add(new Config(ConfigPattern.MONITOR, 2));
-        configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.SERVER, "192.168.1.58", 1));
+        configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.SERVER, "192.168.0.124", 1));
         configList.add(new Config(ConfigPattern.MONITOR, ConfigPattern.PORT, "80", 2));
         //本机配置
         //获取序列号
         try {
 
             @SuppressLint("HardwareIds") String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-//            Class<?> c = Class.forName("android.os.SystemProperties");
+////            Class<?> c = Class.forName("android.os.SystemProperties");
 //            Method get = c.getMethod("get", String.class, String.class);
 //            @SuppressLint("HardwareIds") String serial = (String) (get.invoke(c, "ro.serialno", "unknown"));
             configList.add(new Config(ConfigPattern.LOCAL, 3));

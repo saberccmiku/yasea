@@ -1,1 +1,1 @@
-make: `F:/AndroidStudioWorkspace/yasea/library/build/intermediates/ndkBuild/debug/obj/local/armeabi-v7a/libenc.so' is up to date.
+make: 'F:/AndroidStudioWorkspace/yasea/library/build/intermediates/ndkBuild/debug/obj/local/armeabi-v7a/libenc.so' is up to date.

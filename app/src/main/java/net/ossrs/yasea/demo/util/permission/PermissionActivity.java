@@ -23,6 +23,7 @@ public class PermissionActivity extends AppCompatActivity {
     private String key;
     private boolean showTip;
     private PermissionsUtil.TipInfo tipInfo;
+    private AlertDialog alertDialog;
 
     private final String defaultTitle = "帮助";
     private final String defaultContent = "当前应用缺少必要权限。\n \n 请点击 \"设置\"-\"权限\"-打开所需权限。";
@@ -106,9 +107,9 @@ public class PermissionActivity extends AppCompatActivity {
     private void showMissingPermissionDialog() {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(PermissionActivity.this);
-
-        builder.setTitle(TextUtils.isEmpty(tipInfo.title) ? defaultTitle : tipInfo.title);
-        builder.setMessage(TextUtils.isEmpty(tipInfo.content) ? defaultContent : tipInfo.content);
+        alertDialog = builder.create();
+        alertDialog.setTitle(TextUtils.isEmpty(tipInfo.title) ? defaultTitle : tipInfo.title);
+        alertDialog.setMessage(TextUtils.isEmpty(tipInfo.content) ? defaultContent : tipInfo.content);
 
         builder.setNegativeButton(TextUtils.isEmpty(tipInfo.cancel) ? defaultCancel : tipInfo.cancel, new DialogInterface.OnClickListener(){
             @Override public void onClick(DialogInterface dialog, int which) {
@@ -122,8 +123,8 @@ public class PermissionActivity extends AppCompatActivity {
             }
         });
 
-        builder.setCancelable(false);
-        builder.show();
+        alertDialog.setCancelable(false);
+        alertDialog.show();
     }
 
     private void permissionsDenied() {
@@ -145,6 +146,9 @@ public class PermissionActivity extends AppCompatActivity {
 
     protected void onDestroy() {
         PermissionsUtil.fetchListener(key);
+        if (alertDialog!=null){
+            alertDialog.dismiss();
+        }
         super.onDestroy();
     }
 

@@ -1,17 +1,19 @@
 package net.ossrs.yasea.demo.view;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -288,7 +290,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         findLocalConfig();
 
         // response screen rotation event
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
+//        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
         // restore data.
         //满足摄像状态下的沉浸式，为其他布局设置一定的状态栏高度，避免和状态栏重叠
         int statusBarHeight = ViewUtil.getStatusBarHeight(this);
@@ -311,16 +313,34 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         //rtmp推流状态回调
         mPublisher.setRtmpHandler(new RtmpHandler(this));
         mPublisher.setRecordHandler(new SrsRecordHandler(this));
-        //预览分辨率
-        mPublisher.setPreviewResolution(960, 540);
-        //推流分辨率
-        mPublisher.setOutputResolution(540, 960);
+        @SuppressLint("HardwareIds") String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        if (!TextUtils.isEmpty(androidId) && androidId.equals("36c210b069ec60de")) {
+            //预览分辨率
+//        mPublisher.setPreviewResolution(960, 540);
+            mPublisher.setPreviewResolution(540, 960);
+            //推流分辨率
+//        mPublisher.setOutputResolution(540, 960);
+            mPublisher.setOutputResolution(960, 540);
+        } else {
+            //预览分辨率
+//        mPublisher.setPreviewResolution(960, 540);
+            mPublisher.setPreviewResolution(960, 540);
+            //推流分辨率
+//        mPublisher.setOutputResolution(540, 960);
+            mPublisher.setOutputResolution(540, 960);
+        }
+
         //传输率
         mPublisher.setVideoHDMode();
         //开启美颜（其他滤镜效果在MagicFilterType中查看）
         mPublisher.switchCameraFilter(MagicFilterType.BEAUTY);
         //打开摄像头，开始预览（未推流）
         mPublisher.startCamera();
+        List<Camera.Size> supportedPreviewSizes = mPublisher.getCamera().getParameters().getSupportedPreviewSizes();
+        for (Camera.Size supportedPreviewSize : supportedPreviewSizes) {
+            Log.d(TAG, "initView: height" + supportedPreviewSize.height);
+            Log.d(TAG, "initView: width" + supportedPreviewSize.width);
+        }
         //mPublisher.switchToSoftEncoder();//选择软编码
         mPublisher.switchToHardEncoder();//选择硬编码
         //本地人脸库初始化
@@ -407,10 +427,22 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
                     1200, 1500,
                     0, mPublisher.getCameraId(),
                     false, false, false);
+        } else if (widthPixels == 800 && heightPixels == 1232) {
+            Log.i(TAG, "z20竖屏");
+            return new DrawHelper(1200, 320,
+                    600, 700,
+                    0, mPublisher.getCameraId(),
+                    false, false, false);
+        } else if (widthPixels == 1280 && heightPixels == 752) {
+            Log.i(TAG, "z20横屏");
+            return new DrawHelper(1000, 400,
+                    1200, 550,
+                    0, mPublisher.getCameraId(),
+                    false, false, false);
         } else {
             Log.i(TAG, "小米");
             return new DrawHelper(600, 550,
-                    600, 700,
+                    700, 700,
                     0, mPublisher.getCameraId(),
                     false, false, false);
         }
@@ -1155,7 +1187,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
      * 初始化引擎
      */
     private void initEngine() {
-        faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, FaceEngine.ASF_OP_270_ONLY,
+        faceEngine.init(this, FaceEngine.ASF_DETECT_MODE_VIDEO, FaceEngine.ASF_OP_0_ONLY,
                 16, MAX_DETECT_NUM, FaceEngine.ASF_FACE_RECOGNITION | FaceEngine.ASF_FACE_DETECT | FaceEngine.ASF_AGE | FaceEngine.ASF_FACE3DANGLE | FaceEngine.ASF_GENDER | FaceEngine.ASF_LIVENESS);
         VersionInfo versionInfo = new VersionInfo();
         faceEngine.getVersion(versionInfo);
