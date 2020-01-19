@@ -18,6 +18,7 @@ import com.trello.rxlifecycle2.components.support.RxAppCompatActivity;
 import net.ossrs.yasea.demo.R;
 import net.ossrs.yasea.demo.application.IApplication;
 import net.ossrs.yasea.demo.bean.equipment.Config;
+import net.ossrs.yasea.demo.util.Constants;
 import net.ossrs.yasea.demo.util.ResCode;
 import net.ossrs.yasea.demo.util.permission.PermissionListener;
 import net.ossrs.yasea.demo.util.permission.PermissionsUtil;
@@ -63,7 +64,7 @@ public abstract class BaseActivity extends RxAppCompatActivity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
         @SuppressLint("HardwareIds") String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        if (!TextUtils.isEmpty(androidId) && androidId.equals("36c210b069ec60de")) {
+        if (!TextUtils.isEmpty(androidId) && androidId.equals(Constants.Z20)) {
             //由于横屏有两个方向的横法，而这个设置横屏的语句，假设不是默认的横屏方向，会把已经横屏的屏幕旋转180°。
 
             //所以能够先推断是否已经为横屏了。假设不是再旋转，不会让用户认为转的莫名其妙啦！代码例如以下：

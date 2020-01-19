@@ -314,7 +314,7 @@ public class MainActivity extends BaseActivity implements RtmpHandler.RtmpListen
         mPublisher.setRtmpHandler(new RtmpHandler(this));
         mPublisher.setRecordHandler(new SrsRecordHandler(this));
         @SuppressLint("HardwareIds") String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        if (!TextUtils.isEmpty(androidId) && androidId.equals("36c210b069ec60de")) {
+        if (!TextUtils.isEmpty(androidId) && androidId.equals(Constants.Z20)) {
             //预览分辨率
 //        mPublisher.setPreviewResolution(960, 540);
             mPublisher.setPreviewResolution(540, 960);

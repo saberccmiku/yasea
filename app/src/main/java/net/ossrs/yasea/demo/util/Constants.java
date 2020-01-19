@@ -7,6 +7,7 @@ public class Constants {
 //    public static final String APP_ID = "53PJk1ZQMSQURvReGvAHmwCNKXffJHYHALS1UuCzAT6H";
     public static final String SDK_KEY = "B81vkewSmkXGXASVdfwCpX9MzquuiiTp4jK93tibGiLi";
 //    public static final String SDK_KEY = "AhzKuQC5219mi5TzatiGbbn5oKFZ8srJnzcspXWQZrDz";
+    public static final String Z20 = "36c210b069ec60de";
     public static final String ONLINE = "直播中/工作中";
     public static final String OUT_ONLINE = "离线";
     public static final String EMPTY = "直播中/闲置中";
